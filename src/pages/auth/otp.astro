@@ -3,6 +3,7 @@ export const prerender = false;
 
 import Header from "@/components/layouts/Header.astro";
 import MainLayout from "@/layouts/MainLayout.astro";
+import { Image } from "astro:assets";
 ---
 
 <MainLayout
@@ -11,25 +12,34 @@ import MainLayout from "@/layouts/MainLayout.astro";
 >
   <Header type="notshare" text="Verifikasi OTP" link="/auth/register" />
 
-  <div class="min-h-screen bg-linear-to-br from-slate-50 to-primary-100">
-    <div class="container space-y-3">
-      <!-- Heading -->
-      <div
-        class="bg-white rounded-2xl shadow-sm overflow-hidden px-4 py-5 mt-[64px]"
-      >
-        <h1 class="text-xl font-bold text-gray-800 mb-1">
-          Pastikan Kepemilikan Akun Ini
+  <div
+    class="container min-h-screen bg-neutral-50 flex flex-col justify-center"
+  >
+    <div class="px-8">
+      <!-- Logo -->
+      <div class="flex flex-col items-center text-center mb-8">
+        <div class="w-auto h-16 mb-6">
+          <Image
+            src="/assets/logo/logo-short-color.png"
+            alt="logo"
+            width={64}
+            height={64}
+            class="w-full h-full object-contain"
+          />
+        </div>
+        <h1 class="text-lg font-semibold text-gray-800 leading-snug">
+          Pastikan Kepemilikan<br />Akun Ini
         </h1>
-        <p class="text-xs text-gray-400 leading-relaxed">
+        <p class="text-xs text-gray-400 mt-2">
           Masukkan 6 digit kode yang dikirimkan ke nomor
           <span id="display-phone" class="font-semibold text-gray-600"></span>
         </p>
       </div>
 
-      <!-- Error Banner -->
+      {/* Alert error — hidden by default, ditampilkan via JS */}
       <div
         id="otp-error"
-        class="hidden items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl px-3 py-2.5"
+        class="hidden items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-xs rounded-2xl px-4 py-3 mb-4"
       >
         <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path
@@ -40,62 +50,52 @@ import MainLayout from "@/layouts/MainLayout.astro";
         <span id="otp-error-text">Kode OTP tidak valid</span>
       </div>
 
-      <!-- Form Card -->
-      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-          <span class="w-1 h-5 bg-teal-500 rounded-full"></span>
-          <span class="text-sm font-semibold text-gray-700"
-            >Kode Verifikasi</span
-          >
+      <div class="space-y-6">
+        <!-- 6-digit OTP inputs -->
+        <div id="otp-inputs" class="flex items-center justify-center gap-2">
+          {
+            [0, 1, 2, 3, 4, 5].map((i) => (
+              <input
+                id={`otp-${i}`}
+                type="number"
+                inputmode="numeric"
+                maxlength="1"
+                data-index={i}
+                class="otp-input w-11 h-12 text-center text-lg font-bold bg-gray-100 border border-transparent rounded-2xl text-gray-800 focus:outline-none focus:border-primary-400 focus:bg-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            ))
+          }
         </div>
 
-        <div class="px-4 py-6 space-y-6">
-          <!-- 6-digit OTP inputs -->
-          <div id="otp-inputs" class="flex items-center justify-center gap-2">
-            {
-              [0, 1, 2, 3, 4, 5].map((i) => (
-                <input
-                  id={`otp-${i}`}
-                  type="number"
-                  inputmode="numeric"
-                  maxlength="1"
-                  data-index={i}
-                  class="otp-input w-11 h-12 text-center text-lg font-bold bg-gray-100 border border-transparent rounded-xl text-gray-800 focus:border-teal-400 focus:bg-white transition-colors outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-              ))
-            }
-          </div>
+        {/* Submit */}
+        <button
+          id="btn-verify"
+          type="button"
+          class="w-full bg-primary-500 hover:bg-primary-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold py-4 rounded-full transition-all duration-150"
+        >
+          Verifikasi
+        </button>
 
-          <!-- Tombol Verifikasi -->
-          <button
-            id="btn-verify"
-            type="button"
-            class="w-full bg-teal-500 hover:bg-teal-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl transition-all duration-150"
-          >
-            Verifikasi
-          </button>
+        <!-- Resend OTP -->
+        <div class="text-center space-y-1">
+          <p class="text-xs text-gray-400">Belum menerima kode OTP?</p>
 
-          <!-- Resend OTP -->
-          <div class="text-center space-y-1">
-            <p class="text-xs text-gray-400">Belum menerima kode OTP?</p>
-
-            <!-- Countdown (tampil saat countdown > 0) -->
-            <p id="otp-countdown" class="text-xs text-gray-500">
-              Kirim ulang dalam
-              <span id="countdown-value" class="font-semibold text-teal-600"
-                >03:00</span
-              >
-            </p>
-
-            <!-- Tombol Kirim Ulang (tampil saat countdown = 0) -->
-            <button
-              id="btn-resend"
-              type="button"
-              class="hidden w-full border border-teal-400 text-teal-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-teal-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          <!-- Countdown (tampil saat countdown > 0) -->
+          <p id="otp-countdown" class="text-xs text-gray-500">
+            Kirim ulang dalam
+            <span id="countdown-value" class="font-semibold text-primary-600"
+              >03:00</span
             >
-              Kirim Ulang Kode
-            </button>
-          </div>
+          </p>
+
+          <!-- Tombol Kirim Ulang (tampil saat countdown = 0) -->
+          <button
+            id="btn-resend"
+            type="button"
+            class="hidden w-full border border-primary-400 text-primary-600 text-sm font-semibold py-3 rounded-full hover:bg-primary-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+          >
+            Kirim Ulang Kode
+          </button>
         </div>
       </div>
     </div>

@@ -1,8 +1,4 @@
 ---
-import { Image } from 'astro:assets';
-import logo_white from '/public/images/icons/akber-new-putih.webp';
-// import logo_green from '/public/images/icons/akber-green.webp';
-
 // Header.astro
 interface Props {
   type?: 'default' | 'title' | 'search' | 'onlytext' | 'notshare' | 'onlyicon';
@@ -12,35 +8,60 @@ interface Props {
 
 const { type = 'default', text = '', link = '' } = Astro.props;
 
+const logo_white = '/assets/logo/logo-long-white.png';
+const logo_short_white = '/assets/logo/logo-short-white.png';
+
 const navItems = [
-  { href: '/tentang', label: 'Tentang' },
-  { href: '/blogs', label: 'Blog' },
-  { href: '/kontak', label: 'Kontak' },
-  { href: '/zakat', label: 'Zakat' },
-  { href: '/bio', label: 'Bio Beramalbersama.com' },
+  {
+    href: '/tentang',
+    label: 'Tentang Kami',
+    desc: 'Profil & visi misi Beramalbersama',
+    icon: 'info',
+  },
+  {
+    href: '/kontak',
+    label: 'Hubungi Kami',
+    desc: 'Layanan donatur & informasi',
+    icon: 'phone',
+  },
+  {
+    href: '/rekening',
+    label: 'Rekening Donasi',
+    desc: 'Daftar rekening resmi',
+    icon: 'card',
+  },
+  {
+    href: '/syarat-ketentuan',
+    label: 'Syarat & Ketentuan',
+    desc: 'Ketentuan & kebijakan privasi',
+    icon: 'document',
+  },
 ];
 ---
 
 {type === 'default' && (
   <header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-transparent">
-  {/* <header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-linear-to-r from-primary-500 to-teal-500"> */}
     <div class="container px-2 md:px-4">
-      <div class="flex items-center justify-between h-[65px]">
+      <div class="flex items-center justify-between h-[65px] gap-2">
         <!-- Logo -->
         <a
-          class="flex-shrink-0 w-24 md:w-28 transition-transform duration-300 hover:scale-[1.02]"
+          class="flex-shrink-0 h-[34px] overflow-hidden transition-transform duration-300 hover:scale-[1.02]"
           href="/"
         >
-          <Image
+          <img
             src={logo_white}
             alt="brand_logo"
-            class="w-full h-auto object-contain"
-            height={60}
+            class="h-full w-auto hidden md:block object-contain"
+          />
+          <img
+            src={logo_short_white}
+            alt="brand_logo"
+            class="h-full w-auto block md:hidden object-contain"
           />
         </a>
 
         <!-- Search Bar -->
-        <div class="flex-1 ml-2 md:ml-6 max-w-2xl">
+        <div class="flex-1 ml-2 md:ml-4 max-w-2xl">
           <div id="search-container" class="hidden">
             <form id="search-form" class="relative">
               <input
@@ -52,6 +73,7 @@ const navItems = [
               <button
                 type="submit"
                 class="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 md:h-9 md:w-9 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors duration-200"
+                aria-label="Cari"
               >
                 <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
@@ -62,19 +84,19 @@ const navItems = [
 
           <button
             id="search-button"
-            class="w-full h-9 md:h-10 px-4 rounded-full bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-300 flex items-center gap-3 group"
+            class="w-full h-9 md:h-10 px-4 rounded-full bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-300 flex items-center gap-3 group text-left"
           >
-            <svg class="w-4 h-4 md:w-5 md:h-5 text-white/80 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-4 h-4 md:w-5 md:h-5 text-white/80 group-hover:text-white transition-colors shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
             </svg>
-            <span id="typing-text" class="text-sm md:text-base text-white">Cari Program Kebaikan...</span>
+            <span id="typing-text" class="text-xs sm:text-sm md:text-base text-white truncate">Cari Program Kebaikan...</span>
           </button>
         </div>
 
-        <!-- Menu Toggle Button -->
+        <!-- Menu Toggle Button (Hamburger) -->
         <button
           id="menu-toggle"
-          class="flex-shrink-0 hidden w-10 h-10 md:w-11 md:h-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/25 hover:scale-105 transition-all duration-300 group"
+          class="flex-shrink-0 flex w-9 h-9 md:w-10 md:h-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/25 active:scale-95 hover:scale-105 transition-all duration-300 group cursor-pointer"
           aria-label="Toggle menu"
         >
           <svg id="menu-icon" class="w-5 h-5 md:w-6 md:h-6 text-white group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,34 +109,43 @@ const navItems = [
       </div>
     </div>
 
-    <!-- Navigation Menu -->
+    <!-- Navigation Menu Dropdown -->
     <div id="nav-menu" class="overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0">
-      <div class="bg-primary-500 backdrop-blur-lg border-t border-white/10 shadow-lg">
-        <div class="mx-auto px-4 py-2 max-w-[640px]">
-          <ul class="flex flex-col gap-2">
+      <div class="bg-primary-600/95 backdrop-blur-xl border-t border-white/15 shadow-2xl">
+        <div class="container mx-auto px-3 py-3">
+          <div class="grid grid-cols-1 gap-1.5 max-h-[70vh] overflow-y-auto pr-1">
             {navItems.map((item) => (
-              <li>
-                <a
-                  href={item.href}
-                  class="flex items-center justify-between px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-all duration-200"
-                >
-                  <span>{item.label}</span>
-                  <svg class="text-sm opacity-70 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                  </svg>
-                </a>
-              </li>
+              <a
+                href={item.href}
+                class="flex items-center justify-between p-2.5 rounded-xl text-white bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/25 transition-all duration-200 group"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="flex flex-col text-left">
+                    <span class="text-xs sm:text-sm font-semibold text-white group-hover:text-white leading-tight">{item.label}</span>
+                    <span class="text-[10px] sm:text-[11px] text-white/70 line-clamp-1 mt-0.5">{item.desc}</span>
+                  </div>
+                </div>
+                <svg class="text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </a>
             ))}
-          </ul>
+          </div>
 
           <!-- Login Button (conditionally shown) -->
-          <div id="login-section" class="hidden">
-            <div class="my-2 h-px bg-white/20"></div>
+          <div id="login-section" class="hidden mt-3 pt-2.5 border-t border-white/15">
             <a
-              href="/login"
-              class="block w-full text-center bg-white text-primary-500 font-semibold py-3 mb-2 rounded-lg shadow-md hover:bg-gray-100 transition"
+              href={`/auth/login?from=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`}
+              class="flex items-center gap-3 justify-center w-full text-center bg-white text-primary-600 font-semibold py-2.5 rounded-xl shadow-md hover:bg-neutral-50 transition text-sm"
             >
-              Masuk
+              Masuk Akun
+              <span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32">
+                <path d="M0 0h32v32H0z" fill="none" />
+                <path fill="currentColor" d="M26 30H14a2 2 0 0 1-2-2v-3h2v3h12V4H14v3h-2V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v24a2 2 0 0 1-2 2" />
+                <path fill="currentColor" d="M14.59 20.59L18.17 17H4v-2h14.17l-3.58-3.59L16 10l6 6l-6 6z" />
+              </svg>
+              </span>
             </a>
           </div>
         </div>
@@ -128,15 +159,14 @@ const navItems = [
     <div class="container mx-auto px-4 h-[65px] flex items-center justify-between">
        <!-- Logo -->
         <a
-          class="flex-shrink-0 w-28 md:w-36 transition-transform duration-300 hover:scale-[1.02]"
+          class="flex-shrink-0 h-[34px] transition-transform duration-300 hover:scale-[1.02]"
           href="/"
         >
-          <Image
+          <img
             alt="brand_logo"
-            class="w-full h-auto object-contain"
+            class="h-full w-auto object-contain"
             src={logo_white}
             height={40}
-            height={80}
           />
         </a>
       
@@ -151,6 +181,7 @@ const navItems = [
     </div>
   </header>
 )}
+
 {type === 'title' && (
   <header id="header-transparent" class="fixed top-0 left-0 right-0 z-50 bg-transparent text-primary-600">
     <div class="container mx-auto px-4 h-[65px] flex items-center justify-between">
@@ -164,7 +195,7 @@ const navItems = [
         </svg>
       </button>
       
-      <h2 id="text-header" class="text-[16px] hidden leading-[19px] my-0 font-semibold  flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-start px-4">
+      <h2 id="text-header" class="text-[16px] hidden leading-[19px] my-0 font-semibold flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-start px-4">
         {text}
       </h2>
       
@@ -172,7 +203,7 @@ const navItems = [
         id="share-button"
         class="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 hover:bg-white/10 transition-colors"
       >
-        <svg class="w-6 h-6 " fill="currentColor" viewBox="0 0 20 20">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
           <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"></path>
         </svg>
       </button>
@@ -239,31 +270,40 @@ const navItems = [
 )}
 
 {type === 'notshare' && (
-  <header class="fixed top-0 left-0 right-0 z-50 bg-primary-500 text-white">
-    <div class="container mx-auto px-4 h-16.25 flex items-center justify-between">
+ <header id="header-transparent" class="fixed top-0 left-0 right-0 z-50 bg-transparent text-primary-600">
+    <div class="container mx-auto px-4 h-[65px] flex items-center justify-between">
       <button
         id="back-button"
         data-link={link}
-        class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+        class="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 hover:bg-white/10 transition-colors"
       >
         <svg class="w-6 h-6 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
       </button>
-
-      <h2 id="text-header" class="text-[16px] leading-4.75 my-0 font-semibold flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-start px-4">
+      
+      <h2 id="text-header" class="text-[16px] hidden leading-[19px] my-0 font-semibold flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-start px-4">
         {text}
       </h2>
+      
+      <button
+        id="share-button"
+        class="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 hover:bg-white/10 transition-colors hidden"
+      >
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"></path>
+        </svg>
+      </button>
     </div>
   </header>
 )}
 
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // ========================
-    // Helpers
-    // ========================
-    const $ = (id : any) => document.getElementById(id);
+  import { appendReffCodeToUrl } from "@/lib/referral";
+  import { showToast } from "@/lib/toast";
+
+  function setupHeader() {
+    const $ = (id: string) => document.getElementById(id);
 
     const mainHeader = $("main-header");
     const header = $("header-transparent");
@@ -288,30 +328,24 @@ const navItems = [
     // ========================
     let ticking = false;
 
-    function handleScroll() {
+    function handleHeaderState() {
       const scrolled = window.scrollY > 20;
+      const isMenuOpen = navMenu?.classList.contains("max-h-[800px]");
 
       if (mainHeader) {
-        mainHeader.classList.toggle("bg-gradient-to-r", scrolled);
-        mainHeader.classList.toggle("from-primary-600", scrolled);
-        mainHeader.classList.toggle("to-teal-600", scrolled);
-        mainHeader.classList.toggle("shadow-lg", scrolled);
-        mainHeader.classList.toggle("backdrop-blur-sm", scrolled);
-
-        mainHeader.classList.toggle("from-primary-500", !scrolled);
-        mainHeader.classList.toggle("to-teal-500", !scrolled);
+        const isSolid = scrolled || isMenuOpen;
+        mainHeader.classList.toggle("bg-transparent", !isSolid);
+        mainHeader.classList.toggle("bg-primary-500", isSolid);
+        mainHeader.classList.toggle("shadow-lg", isSolid);
+        mainHeader.classList.toggle("backdrop-blur-sm", isSolid);
       }
 
       if (header && backButton && shareButton && textHeader) {
-        header.classList.toggle("bg-gradient-to-r", scrolled);
-        header.classList.toggle("from-primary-600", scrolled);
-        header.classList.toggle("to-teal-600", scrolled);
+        header.classList.toggle("bg-transparent", !scrolled);
+        header.classList.toggle("bg-primary-500", scrolled);
         header.classList.toggle("shadow-lg", scrolled);
         header.classList.toggle("backdrop-blur-sm", scrolled);
         header.classList.toggle("text-white", scrolled);
-
-        header.classList.toggle("from-primary-500", !scrolled);
-        header.classList.toggle("to-teal-500", !scrolled);
         header.classList.toggle("text-primary-600", !scrolled);
 
         backButton.classList.toggle("bg-white/80", !scrolled);
@@ -325,7 +359,7 @@ const navItems = [
 
     window.addEventListener("scroll", () => {
       if (!ticking) {
-        window.requestAnimationFrame(handleScroll);
+        window.requestAnimationFrame(handleHeaderState);
         ticking = true;
       }
     });
@@ -342,19 +376,17 @@ const navItems = [
     // Share Button
     // ========================
     shareButton?.addEventListener("click", async () => {
-      const reffCode = localStorage.getItem("save_reff_code") || "";
-      const url = new URL(window.location.href);
-      if (reffCode) url.searchParams.set("reff_code", reffCode);
+      const shareUrl = await appendReffCodeToUrl(window.location.href);
 
       try {
         if (navigator.share) {
           await navigator.share({
             title: document.title,
-            url: url.toString(),
+            url: shareUrl,
           });
         } else {
-          await navigator.clipboard.writeText(url.toString());
-          alert("Link berhasil disalin!");
+          await navigator.clipboard.writeText(shareUrl);
+          showToast("Link berhasil disalin!", "success");
         }
       } catch (err) {
         console.error("Share error:", err);
@@ -364,28 +396,53 @@ const navItems = [
     // ========================
     // Menu Toggle
     // ========================
-    menuToggle?.addEventListener("click", () => {
-      const isOpen = navMenu?.classList.contains("max-h-[400px]");
+    function toggleMenu(forceClose?: boolean) {
+      if (!navMenu) return;
+      const isOpen = navMenu.classList.contains("max-h-[800px]");
+      const shouldOpen = forceClose !== undefined ? !forceClose : !isOpen;
 
-      navMenu?.classList.toggle("max-h-[400px]", !isOpen);
-      navMenu?.classList.toggle("opacity-100", !isOpen);
-      navMenu?.classList.toggle("max-h-0", isOpen);
-      navMenu?.classList.toggle("opacity-0", isOpen);
+      navMenu.classList.toggle("max-h-[800px]", shouldOpen);
+      navMenu.classList.toggle("opacity-100", shouldOpen);
+      navMenu.classList.toggle("max-h-0", !shouldOpen);
+      navMenu.classList.toggle("opacity-0", !shouldOpen);
 
-      menuIcon?.classList.toggle("hidden", !isOpen);
-      closeIcon?.classList.toggle("hidden", isOpen);
+      menuIcon?.classList.toggle("hidden", shouldOpen);
+      closeIcon?.classList.toggle("hidden", !shouldOpen);
 
-      // close search if open
-      if (!isOpen && searchContainer && !searchContainer.classList.contains("hidden")) {
+      // close search if opening menu
+      if (shouldOpen && searchContainer && !searchContainer.classList.contains("hidden")) {
         searchContainer.classList.add("hidden");
         searchButton?.classList.remove("hidden");
+      }
+
+      handleHeaderState();
+    }
+
+    menuToggle?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleMenu();
+    });
+
+    // Click outside menu to close
+    document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        navMenu &&
+        menuToggle &&
+        target &&
+        !navMenu.contains(target) &&
+        !menuToggle.contains(target) &&
+        navMenu.classList.contains("max-h-[800px]")
+      ) {
+        toggleMenu(true);
       }
     });
 
     // ========================
     // Search Toggle
     // ========================
-    searchButton?.addEventListener("click", () => {
+    searchButton?.addEventListener("click", (e) => {
+      e.stopPropagation();
       searchButton.classList.add("hidden");
       searchContainer?.classList.remove("hidden");
 
@@ -393,11 +450,8 @@ const navItems = [
       input?.focus();
 
       // close menu if open
-      if (navMenu?.classList.contains("max-h-[400px]")) {
-        navMenu.classList.remove("max-h-[400px]", "opacity-100");
-        navMenu.classList.add("max-h-0", "opacity-0");
-        menuIcon?.classList.remove("hidden");
-        closeIcon?.classList.add("hidden");
+      if (navMenu?.classList.contains("max-h-[800px]")) {
+        toggleMenu(true);
       }
     });
 
@@ -480,7 +534,7 @@ const navItems = [
     // ========================
     if (typingText) {
       const texts = [
-        "Cari Program Kebaikan...",
+        "Cari Program Keb...",
         "Bangun Masjid...",
         "Pondok Quran...",
         "Pendidikan Quran...",
@@ -523,5 +577,10 @@ const navItems = [
         loginSection.classList.toggle("hidden", isLoggedIn());
       });
     }
-  });
+  }
+
+  // Support standard DOM and Astro page-load lifecycle
+  document.addEventListener("DOMContentLoaded", setupHeader);
+  document.addEventListener("astro:page-load", setupHeader);
 </script>
+

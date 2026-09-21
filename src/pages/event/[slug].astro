@@ -62,6 +62,7 @@ const dateInfo = formatDate(eventData.datetime, {
   month: "long",
   year: "numeric",
 });
+
 const typeInfo = `${eventData.event_type.name} ${eventData.mode}`;
 
 const buttonText = !isActive
@@ -88,6 +89,7 @@ const ICON = {
   description={eventData.summary || eventData.title}
 >
   <Header type="title" text={eventData.title} link="/" />
+  <!-- <Header type="onlyicon" /> -->
 
   <main class="min-h-screen">
     <div class="container bg-white">

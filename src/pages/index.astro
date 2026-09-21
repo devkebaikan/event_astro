@@ -3,7 +3,6 @@ export const prerender = false;
 
 import Header from "@/components/layouts/Header.astro";
 import MainLayout from "@/layouts/MainLayout.astro";
-import { Image } from "astro:assets";
 import { getEvents } from "@/lib/FetchData";
 
 
@@ -25,13 +24,9 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
 
   <!-- Hero -->
   <section class="relative h-fit overflow-hidden mt-[65px] container">
-    <Image
-      width={240}
-      height={160}
-      src="/images/event/banner-event.webp"
+    <img
+      src="/assets/banner/banner-event.webp"
       alt="Event"
-      loading="eager"
-      decoding="async"
       class="w-full h-full object-cover"
     />
     <div class="absolute inset-0 bg-gradient-to-t from-gray-50/45 via-black/10 to-transparent" />
