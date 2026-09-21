@@ -2,16 +2,16 @@
 const { paymentMethods = [] } = Astro.props;
 
 const banks = (paymentMethods as any[]).filter(
-  (m: any) => m.type === "bank" && m.is_active === "1",
+  (m: any) => m.type === "bank" && m.is_active === "true",
 );
 const vas = (paymentMethods as any[]).filter(
-  (m: any) => m.type === "VA" && m.is_active === "1",
+  (m: any) => m.type === "VA" && m.is_active === "true",
 );
 const ewallets = (paymentMethods as any[]).filter(
-  (m: any) => m.type === "e_wallet" && m.is_active === "1",
+  (m: any) => m.type === "e_wallet" && m.is_active === "true",
 );
 const wallets = (paymentMethods as any[]).filter(
-  (m: any) => m.type === "wallet" && m.is_active === "1",
+  (m: any) => m.type === "wallet" && m.is_active === "true",
 );
 ---
 

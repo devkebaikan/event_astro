@@ -277,7 +277,7 @@ import MainLayout from "@/layouts/MainLayout.astro";
       setLoading(true, btnResend, "Kirim Ulang Kode");
 
       try {
-        await useApi().post("/request-otp", { phone: decodedPhone });
+        await useApi().post("/auth/otp", { phone: decodedPhone });
         showToast("Kode OTP berhasil dikirim ulang", "success");
         clearOtp();
         startCountdown();

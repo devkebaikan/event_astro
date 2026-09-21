@@ -3,12 +3,11 @@ export const prerender = false;
 
 import MainLayout from "@/layouts/MainLayout.astro";
 import Header from "@/components/layouts/Header.astro";
-import { formatRupiah, getInitialName } from "@/lib/formatter";
+import { formatRupiah, formatDate, getInitialName } from "@/lib/formatter";
 import { getServerToken } from "@/lib/auth";
 
 import PaymentMethodModal from "@/components/ui/PaymentMethod.astro";
-import { getPaymentMethod, getUserProfile } from "@/lib/FetchData";
-
+import { getEventByLink, getPaymentMethod, getUserProfile } from "@/lib/FetchData";
 
 interface EventDetail {
   id: string;
@@ -17,8 +16,8 @@ interface EventDetail {
   datetime: string;
   price: string;
   mode: string;
-  link: string;
-  type: { name: string };
+  slug: string;
+  event_type: { name: string };
   reg_only: number | null;
 }
 
@@ -31,33 +30,18 @@ interface User {
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect("/");
 
+
 const token = getServerToken(Astro.cookies);
-const API_URL = import.meta.env.ASTRO_API_URL;
+const API_URL = import.meta.env.PUBLIC_API_URL;
 
-const baseHeaders = {
-  Accept: "application/json",
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-};
-
-const fetchEvent = async (): Promise<EventDetail | null> => {
-  try {
-    const res = await fetch(`${API_URL}/event/link/${slug}`, { headers: baseHeaders });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json?.data ?? null;
-  } catch { return null; }
-};
-
-
-
-const [eventData, user, allPaymentMethods] = await Promise.all([
-  fetchEvent(),
- token ? getUserProfile(token) : Promise.resolve(null),
+const [eventRes, user, allPaymentMethods] = await Promise.all([
+  getEventByLink(slug, token),
+  token ? getUserProfile(token) : Promise.resolve(null),
   getPaymentMethod(slug),
 ]);
 
+const eventData: EventDetail | null = eventRes?.data ?? null;
 const account = user?.data ?? null;
-const walletBal = (account?.dompet_kebaikan?.saldo ?? 0) as number;
 
 if (!eventData) return Astro.redirect(`/event/${slug}`);
 
@@ -73,13 +57,14 @@ const isRegOnly = regOnly !== 0;
 const priceNum = Number(eventData.price) || 0;
 const isFree = priceNum === 0;
 
-const dateInfo = new Date(eventData.datetime).toLocaleDateString("id-ID", {
+const dateInfo = formatDate(eventData.datetime, {
   weekday: "long",
   day: "numeric",
   month: "long",
   year: "numeric",
 });
-const typeInfo = `${eventData.type.name} ${eventData.mode}`;
+
+const typeInfo = `${eventData.event_type.name} ${eventData.mode}`;
 
 const headerText = isRegOnly
   ? "Selesaikan Pendaftaran Anda"
@@ -99,11 +84,11 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       {isLoggedIn ? (
         <div class="bg-white rounded border border-gray-100 shadow-sm p-4 flex gap-3 items-center">
           <div class="w-12 h-12 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-            {getInitialName(account!.name)}
+            {getInitialName(account?.name)}
           </div>
           <div class="min-w-0">
-            <p class="font-semibold text-sm text-gray-900 truncate">{account!.name}</p>
-            <p class="text-xs text-gray-500 truncate">{account!.phone}</p>
+            <p class="font-semibold text-sm text-gray-900 truncate">{account?.name}</p>
+            <p class="text-xs text-gray-500 truncate">{account?.phone}</p>
           </div>
         </div>
       ) : (
@@ -391,6 +376,8 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
 
   const config = document.querySelector("[data-form-config]") as HTMLElement | null;
   if (config) {
+
+    // ── Read data bridge ───────────────────────────────────────────────────
     const {
       slug = "",
       apiUrl = "",
@@ -404,81 +391,75 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       submitText = "Lanjutkan",
     } = config.dataset;
 
-    const priceNum = Number(eventPrice) || 0;
-    const isRegOnlyFlag = isRegOnly === "true";
+    const priceNum       = Number(eventPrice) || 0;
+    const isRegOnlyFlag  = isRegOnly === "true";
     const isLoggedInFlag = isLoggedIn === "true";
 
-    // State (initialized from sessionStorage if available)
-    let qty = 1;
-    let totalPrice = priceNum;
-    let infaq = 0;
+    // ── State ──────────────────────────────────────────────────────────────
+    let qty             = 1;
+    let totalPrice      = priceNum;
+    let infaq           = 0;
     let paymentMethodId = isRegOnlyFlag ? "1" : "";
+    let paymentType     = "";
     let discountData: DiscountData | null = null;
-    let isSubmitting = false;
-    let paymentType = "";
-    let paymentSelected = false;
+    let isSubmitting    = false;
 
     try {
       const raw = sessionStorage.getItem("eventFormData");
       if (raw) {
         const parsed = JSON.parse(raw);
-        qty = Number(parsed.qty) || 1;
+        qty        = Number(parsed.qty) || 1;
         totalPrice = Number(parsed.totalPrice) || priceNum;
       }
     } catch {}
 
-    // Elements
-    const summaryQty = document.getElementById("summary-qty");
-    const summaryTotalBayar = document.getElementById("summary-total-bayar");
-    const summarySubtotal = document.getElementById("summary-subtotal");
-    const summaryFinalPrice = document.getElementById("summary-final-price");
-    const summaryDiscountRow = document.getElementById("summary-discount-row");
+    // ── DOM refs ───────────────────────────────────────────────────────────
+    const summaryQty           = document.getElementById("summary-qty");
+    const summaryTotalBayar    = document.getElementById("summary-total-bayar");
+    const summarySubtotal      = document.getElementById("summary-subtotal");
+    const summaryFinalPrice    = document.getElementById("summary-final-price");
+    const summaryDiscountRow   = document.getElementById("summary-discount-row");
     const summaryDiscountValue = document.getElementById("summary-discount-value");
-    const summaryInfaqRow = document.getElementById("summary-infaq-row");
-    const summaryInfaqValue = document.getElementById("summary-infaq-value");
-    const ticketSectionTitle = document.getElementById("ticket-section-title");
+    const summaryInfaqRow      = document.getElementById("summary-infaq-row");
+    const summaryInfaqValue    = document.getElementById("summary-infaq-value");
+    const ticketSectionTitle   = document.getElementById("ticket-section-title");
 
-    const inputInfaq = document.getElementById("input-infaq") as HTMLInputElement | null;
-    const quickAmounts = document.querySelectorAll<HTMLButtonElement>(".quick-amount");
+    const inputInfaq    = document.getElementById("input-infaq")    as HTMLInputElement | null;
+    const quickAmounts  = document.querySelectorAll<HTMLButtonElement>(".quick-amount");
 
-    const voucherToggle = document.getElementById("voucher-toggle") as HTMLInputElement | null;
-    const voucherWrapper = document.getElementById("voucher-input-wrapper");
-    const inputDiscountCode = document.getElementById("input-discount-code") as HTMLInputElement | null;
-    const applyDiscountBtn = document.getElementById("apply-discount") as HTMLButtonElement | null;
-    const discountApplied = document.getElementById("discount-applied");
+    const voucherToggle       = document.getElementById("voucher-toggle")      as HTMLInputElement | null;
+    const voucherWrapper      = document.getElementById("voucher-input-wrapper");
+    const inputDiscountCode   = document.getElementById("input-discount-code") as HTMLInputElement | null;
+    const applyDiscountBtn    = document.getElementById("apply-discount")      as HTMLButtonElement | null;
+    const discountApplied     = document.getElementById("discount-applied");
     const discountAppliedText = document.getElementById("discount-applied-text");
 
-    const openModalBtn = document.getElementById(
-        "open-payment-modal",
-    ) as HTMLButtonElement;
-    const paymentImg = document.getElementById("payment-img") as HTMLImageElement;
-    const paymentNameEl = document.getElementById("payment-name") as HTMLElement;
-    const walletInfo = document.getElementById("wallet-info") as HTMLElement;
-    
+    const openModalBtn  = document.getElementById("open-payment-modal") as HTMLButtonElement;
+    const paymentImg    = document.getElementById("payment-img")        as HTMLImageElement;
+    const paymentNameEl = document.getElementById("payment-name")       as HTMLElement;
 
-    const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement | null;
+    const submitBtn      = document.getElementById("submit-btn")      as HTMLButtonElement | null;
     const submitBtnLabel = document.getElementById("submit-btn-label");
 
-    const inputName = document.getElementById("input-name") as HTMLInputElement | null;
+    const inputName  = document.getElementById("input-name")  as HTMLInputElement | null;
     const inputPhone = document.getElementById("input-phone") as HTMLInputElement | null;
     const inputEmail = document.getElementById("input-email") as HTMLInputElement | null;
 
-    // Initial display sync (qty/totalPrice from sessionStorage)
-    if (summaryQty) summaryQty.textContent = String(qty);
+    // ── Initial display sync (from sessionStorage) ─────────────────────────
+    if (summaryQty)        summaryQty.textContent        = String(qty);
     if (summaryTotalBayar) summaryTotalBayar.textContent = formatRupiah(totalPrice);
-    if (summarySubtotal) summarySubtotal.textContent = formatRupiah(totalPrice);
+    if (summarySubtotal)   summarySubtotal.textContent   = formatRupiah(totalPrice);
     if (summaryFinalPrice) summaryFinalPrice.textContent = formatRupiah(totalPrice);
     if (ticketSectionTitle && totalPrice === 0) {
       ticketSectionTitle.textContent = "Tiket Pendaftaran Gratis";
     }
 
+    // ── Discount helpers ───────────────────────────────────────────────────
     const computeDiscountAmount = (): number => {
       if (!discountData) return 0;
       if (discountData.type === "percentage") {
         const amount = (totalPrice * Number(discountData.discount)) / 100;
-        const max = discountData.max_discount
-          ? Number(discountData.max_discount)
-          : Infinity;
+        const max    = discountData.max_discount ? Number(discountData.max_discount) : Infinity;
         return Math.min(amount, max);
       }
       return Number(discountData.discount);
@@ -512,9 +493,9 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       }
     };
 
-    // Infaq input
+    // ── Infaq input ────────────────────────────────────────────────────────
     inputInfaq?.addEventListener("input", (e) => {
-      const target = e.target as HTMLInputElement;
+      const target  = e.target as HTMLInputElement;
       const numeric = parseInt(target.value.replace(/[^0-9]/g, ""), 10) || 0;
       infaq = numeric;
       target.value = numeric > 0 ? numeric.toLocaleString("id-ID") : "";
@@ -530,39 +511,27 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       });
     });
 
-    // Voucher toggle
+    // ── Voucher toggle ─────────────────────────────────────────────────────
     voucherToggle?.addEventListener("change", () => {
-      if (voucherToggle.checked) {
-        voucherWrapper?.classList.remove("hidden");
-      } else {
-        voucherWrapper?.classList.add("hidden");
-      }
+      voucherWrapper?.classList.toggle("hidden", !voucherToggle.checked);
     });
 
-    // Apply discount
+    // ── Apply discount ─────────────────────────────────────────────────────
     applyDiscountBtn?.addEventListener("click", async () => {
       const code = inputDiscountCode?.value.trim() ?? "";
-      if (!code) {
-        showToast("Masukkan kode voucher", "error");
-        return;
-      }
+      if (!code) { showToast("Masukkan kode voucher", "error"); return; }
 
       applyDiscountBtn.disabled = true;
       try {
-        const res = await fetch(`${apiUrl}/discount/code/${code}`, {
-          headers: { Accept: "application/json" },
-        });
+        const res  = await fetch(`${apiUrl}/discount/code/${code}`, { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error("invalid");
         const json = await res.json();
         const data = json?.data as DiscountData | undefined;
         if (data?.discount) {
           discountData = data;
-          const text =
-            data.type === "percentage"
-              ? `${data.name} sebesar ${Number(data.discount)}% sampai ${formatRupiah(
-                  Number(data.max_discount),
-                )} dengan minimal pembelian ${formatRupiah(Number(data.min_purchase))}`
-              : `${data.name} sebesar ${formatRupiah(Number(data.discount))}`;
+          const text = data.type === "percentage"
+            ? `${data.name} sebesar ${Number(data.discount)}% sampai ${formatRupiah(Number(data.max_discount))} dengan minimal pembelian ${formatRupiah(Number(data.min_purchase))}`
+            : `${data.name} sebesar ${formatRupiah(Number(data.discount))}`;
           if (discountAppliedText) discountAppliedText.textContent = text;
           discountApplied?.classList.remove("hidden");
           discountApplied?.classList.add("flex");
@@ -582,30 +551,28 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       }
     });
 
-    // ── Payment modal ─────────────────────────────────────────────────────────
-  openModalBtn?.addEventListener("click", () => {
-    (window as any).openPaymentModal?.();
-  });
+    // ── Payment modal ──────────────────────────────────────────────────────
+    openModalBtn?.addEventListener("click", () => {
+      (window as any).openPaymentModal?.();
+    });
 
-  window.addEventListener("payment:selected", (e: Event) => {
-    const { id, name, image, type } = (e as CustomEvent).detail;
-    paymentMethodId = id;
-    paymentType = type ?? "";
-    paymentSelected = true;
+    window.addEventListener("payment:selected", (e: Event) => {
+      const { id, name, image, type } = (e as CustomEvent).detail;
+      paymentMethodId = id;
+      paymentType     = type ?? "";
 
-    walletInfo?.classList.toggle("hidden", paymentType !== "wallet");
-    paymentImg.src = image ?? "";
-    paymentImg.classList.toggle("hidden", !image);
-    paymentNameEl.textContent = name ?? "Pilih metode pembayaran";
-    paymentNameEl.classList.remove("text-gray-400");
-    paymentNameEl.classList.add("text-gray-800");
-  });
+      paymentImg.src = image ?? "";
+      paymentImg.classList.toggle("hidden", !image);
+      paymentNameEl.textContent = name ?? "Pilih metode pembayaran";
+      paymentNameEl.classList.remove("text-gray-400");
+      paymentNameEl.classList.add("text-gray-800");
+    });
 
-    // Submit
+    // ── Submit ─────────────────────────────────────────────────────────────
     submitBtn?.addEventListener("click", async () => {
       if (isSubmitting || !submitBtn) return;
 
-      const name = isLoggedInFlag ? userName : inputName?.value.trim() ?? "";
+      const name  = isLoggedInFlag ? userName  : inputName?.value.trim()  ?? "";
       const phone = isLoggedInFlag ? userPhone : inputPhone?.value.trim() ?? "";
       const email = isLoggedInFlag ? userEmail : inputEmail?.value.trim() ?? "";
 
@@ -619,12 +586,9 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
         return;
       }
 
-      if (discountData) {
-        const discAmount = computeDiscountAmount();
-        if (discAmount > totalPrice) {
-          showToast("Maaf, kode diskon melampaui total harga", "error");
-          return;
-        }
+      if (discountData && computeDiscountAmount() > totalPrice) {
+        showToast("Maaf, kode diskon melampaui total harga", "error");
+        return;
       }
 
       isSubmitting = true;
@@ -632,40 +596,38 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       if (submitBtnLabel) submitBtnLabel.textContent = "Memproses...";
 
       const payload: Record<string, unknown> = {
-        type: "event",
-        items: [eventId],
-        qty: [qty],
-        total: [String(priceNum)],
+        type:              "event",
+        items:             [Number(eventId)],
+        qty:               [qty],
+        total:             [Number(priceNum)],
         payment_method_id: paymentMethodId,
         name,
         phone,
         email,
-        source: "direct",
-        status: "Pending",
-        discount_code: discountData ? inputDiscountCode?.value.trim() ?? "" : "",
-        discount_id: discountData?.id ?? "",
+        source:            "direct",
+        status:            "Pending",
+        discount_code:     discountData ? inputDiscountCode?.value.trim() ?? "" : "",
+        discount_id:       discountData?.id ?? "",
         ...(infaq > 0 ? { infaq } : {}),
       };
 
       const cleaned = Object.fromEntries(
-        Object.entries(payload).filter(
-          ([_, v]) => v !== "" && v !== null && v !== undefined,
-        ),
+        Object.entries(payload).filter(([_, v]) => v !== "" && v !== null && v !== undefined),
       );
 
       try {
         const token = getToken();
-        const res = await fetch(`${apiUrl}/transactions/store`, {
-          method: "POST",
+        const res   = await fetch(`${apiUrl}/transactions`, {
+          method:  "POST",
           headers: {
-            Accept: "application/json",
+            Accept:         "application/json",
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(cleaned),
         });
         if (!res.ok) throw new Error("transaction failed");
-        const json = await res.json();
+        const json    = await res.json();
         const invoice = json?.data?.invoice;
         if (!invoice) throw new Error("invoice missing");
 
@@ -674,7 +636,7 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       } catch (err) {
         console.error(err);
         showToast("Transaksi gagal, silakan coba lagi", "error");
-        isSubmitting = false;
+        isSubmitting       = false;
         submitBtn.disabled = false;
         if (submitBtnLabel) submitBtnLabel.textContent = submitText;
       }

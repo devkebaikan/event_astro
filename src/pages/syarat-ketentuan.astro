@@ -1,0 +1,163 @@
+---
+export const prerender = true;
+
+import Header from "@/components/layouts/Header.astro";
+import Footer from "@/components/layouts/Footer.astro";
+import MainLayout from "@/layouts/MainLayout.astro";
+---
+
+<MainLayout title="Syarat & Ketentuan" description="Syarat, ketentuan, dan kebijakan privasi platform Beramalbersama.com.">
+  <Header type="notshare" text="Syarat & Ketentuan" />
+
+  <div class="container mx-auto min-h-screen bg-neutral-50 pt-[65px]">
+
+    <!-- Tab Switcher -->
+    <div class="sticky top-[65px] z-20 bg-white border-b border-neutral-100 shadow-sm">
+      <div class="flex">
+        <button
+          id="tab-syarat"
+          class="flex-1 py-3 text-sm font-semibold text-primary-600 border-b-2 border-primary-500 transition-all"
+          onclick="switchTab('syarat')"
+        >
+          Syarat & Ketentuan
+        </button>
+        <button
+          id="tab-privasi"
+          class="flex-1 py-3 text-sm font-medium text-neutral-400 border-b-2 border-transparent transition-all"
+          onclick="switchTab('privasi')"
+        >
+          Kebijakan Privasi
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab: Syarat & Ketentuan -->
+    <div id="content-syarat" class="px-4 py-6 space-y-5">
+
+      <div class="bg-primary-50 border border-primary-100 rounded-2xl p-4">
+        <p class="text-xs text-primary-700 m-0 leading-relaxed">
+          Dengan menggunakan layanan Beramalbersama.com, Anda menyetujui syarat dan ketentuan berikut. Harap baca dengan seksama sebelum menggunakan platform kami.
+        </p>
+      </div>
+
+      {[
+        {
+          title: "1. Penerimaan Syarat",
+          body: "Dengan mengakses atau menggunakan layanan Beramalbersama.com, Anda menyetujui untuk terikat oleh syarat dan ketentuan ini. Jika Anda tidak menyetujui sebagian atau seluruh ketentuan ini, Anda tidak diperkenankan menggunakan layanan kami."
+        },
+        {
+          title: "2. Layanan Platform",
+          body: "Beramalbersama.com adalah platform donasi online yang menyediakan fasilitas penggalangan dana, penyaluran donasi, dan program kemanusiaan. Kami bertindak sebagai perantara antara donatur dan penerima manfaat."
+        },
+        {
+          title: "3. Akun Pengguna",
+          body: "Anda bertanggung jawab untuk menjaga kerahasiaan akun dan kata sandi Anda. Segala aktivitas yang terjadi di bawah akun Anda menjadi tanggung jawab Anda sepenuhnya. Segera informasikan kepada kami jika terdapat akses tidak sah ke akun Anda."
+        },
+        {
+          title: "4. Donasi dan Pembayaran",
+          body: "Semua donasi yang dilakukan melalui platform ini bersifat sukarela. Setelah donasi berhasil diproses, dana tidak dapat dikembalikan kecuali terdapat kesalahan teknis yang dapat dibuktikan. Kami menggunakan sistem pembayaran yang aman dan terenkripsi."
+        },
+        {
+          title: "5. Transparansi Dana",
+          body: "Kami berkomitmen untuk menyalurkan 100% donasi kepada penerima manfaat sesuai program yang dipilih. Laporan keuangan dan kegiatan tersedia secara berkala di platform kami untuk memastikan transparansi."
+        },
+        {
+          title: "6. Larangan Penggunaan",
+          body: "Pengguna dilarang menggunakan platform ini untuk tujuan penipuan, pencucian uang, atau aktivitas ilegal lainnya. Pelanggaran akan dilaporkan kepada pihak berwenang dan akun akan dinonaktifkan."
+        },
+        {
+          title: "7. Perubahan Ketentuan",
+          body: "Kami berhak mengubah syarat dan ketentuan ini kapan saja. Perubahan akan diberitahukan melalui email atau notifikasi di platform. Penggunaan layanan setelah perubahan dianggap sebagai persetujuan atas ketentuan baru."
+        },
+        {
+          title: "8. Hubungi Kami",
+          body: "Untuk pertanyaan terkait syarat dan ketentuan, silakan hubungi kami melalui email di legal@beramalbersama.com atau WhatsApp di +62 819-1234-4745."
+        },
+      ].map((item) => (
+        <div class="bg-white rounded-2xl shadow-sm border border-neutral-100 p-4">
+          <h3 class="text-sm font-bold text-neutral-800 mb-2 m-0">{item.title}</h3>
+          <p class="text-sm text-neutral-500 leading-relaxed m-0">{item.body}</p>
+        </div>
+      ))}
+
+      <p class="text-center text-[11px] text-neutral-400 pb-4">Terakhir diperbarui: 1 Januari 2025</p>
+    </div>
+
+    <!-- Tab: Kebijakan Privasi -->
+    <div id="content-privasi" class="px-4 py-6 space-y-5 hidden">
+
+      <div class="bg-primary-50 border border-primary-100 rounded-2xl p-4">
+        <p class="text-xs text-primary-700 m-0 leading-relaxed">
+          Kebijakan privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi pribadi Anda.
+        </p>
+      </div>
+
+      {[
+        {
+          title: "1. Informasi yang Kami Kumpulkan",
+          body: "Kami mengumpulkan informasi yang Anda berikan saat mendaftar, melakukan donasi, atau menghubungi kami, seperti nama, nomor telepon, email, dan alamat. Kami juga mengumpulkan data penggunaan platform secara otomatis."
+        },
+        {
+          title: "2. Penggunaan Informasi",
+          body: "Informasi Anda digunakan untuk memproses donasi, mengirimkan laporan, mengirimkan notifikasi program, serta meningkatkan layanan kami. Kami tidak akan menjual atau menyewakan data pribadi Anda kepada pihak ketiga."
+        },
+        {
+          title: "3. Keamanan Data",
+          body: "Kami menggunakan enkripsi SSL dan langkah-langkah keamanan standar industri untuk melindungi data Anda. Namun, tidak ada metode transmisi internet yang 100% aman, sehingga kami tidak dapat menjamin keamanan absolut."
+        },
+        {
+          title: "4. Cookie",
+          body: "Platform kami menggunakan cookie untuk meningkatkan pengalaman pengguna dan menganalisis trafik. Anda dapat mengatur browser untuk menolak cookie, namun beberapa fitur platform mungkin tidak berfungsi optimal."
+        },
+        {
+          title: "5. Berbagi Data",
+          body: "Kami dapat berbagi informasi Anda dengan mitra penyalur (mitra program) hanya sebatas yang diperlukan untuk pelaksanaan program. Semua mitra terikat perjanjian kerahasiaan data."
+        },
+        {
+          title: "6. Hak Pengguna",
+          body: "Anda berhak untuk mengakses, memperbarui, atau menghapus data pribadi Anda. Untuk mengajukan permintaan, hubungi kami melalui privasi@beramalbersama.com."
+        },
+        {
+          title: "7. Perubahan Kebijakan",
+          body: "Kebijakan privasi ini dapat diperbarui sewaktu-waktu. Kami akan memberitahu Anda melalui email atau notifikasi platform jika terjadi perubahan material."
+        },
+      ].map((item) => (
+        <div class="bg-white rounded-2xl shadow-sm border border-neutral-100 p-4">
+          <h3 class="text-sm font-bold text-neutral-800 mb-2 m-0">{item.title}</h3>
+          <p class="text-sm text-neutral-500 leading-relaxed m-0">{item.body}</p>
+        </div>
+      ))}
+
+      <p class="text-center text-[11px] text-neutral-400 pb-4">Terakhir diperbarui: 1 Januari 2025</p>
+    </div>
+
+    <Footer />
+  </div>
+</MainLayout>
+
+<script>
+  function switchTab(tab: string) {
+    const syarat = document.getElementById("content-syarat");
+    const privasi = document.getElementById("content-privasi");
+    const tabSyarat = document.getElementById("tab-syarat");
+    const tabPrivasi = document.getElementById("tab-privasi");
+
+    if (tab === "syarat") {
+      syarat?.classList.remove("hidden");
+      privasi?.classList.add("hidden");
+      tabSyarat?.classList.add("text-primary-600", "border-primary-500");
+      tabSyarat?.classList.remove("text-neutral-400", "border-transparent");
+      tabPrivasi?.classList.remove("text-primary-600", "border-primary-500");
+      tabPrivasi?.classList.add("text-neutral-400", "border-transparent");
+    } else {
+      privasi?.classList.remove("hidden");
+      syarat?.classList.add("hidden");
+      tabPrivasi?.classList.add("text-primary-600", "border-primary-500");
+      tabPrivasi?.classList.remove("text-neutral-400", "border-transparent");
+      tabSyarat?.classList.remove("text-primary-600", "border-primary-500");
+      tabSyarat?.classList.add("text-neutral-400", "border-transparent");
+    }
+  }
+
+  (window as any).switchTab = switchTab;
+</script>

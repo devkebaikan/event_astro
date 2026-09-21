@@ -6,7 +6,7 @@ import MainLayout from "@/layouts/MainLayout.astro";
 import { formatCompactNumber } from "@/lib/formatter";
 import PaymentMethodModal from "@/components/ui/PaymentMethod.astro";
 
-const API_URL = import.meta.env.ASTRO_API_URL;
+const API_URL = import.meta.env.PUBLIC_API_URL;
 
 const pmRes = await fetch(
   `${API_URL}/payment/payment-method?program_link=infaq`,

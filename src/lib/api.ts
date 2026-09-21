@@ -1,10 +1,10 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
 
-// Server-side: ASTRO_API_URL (runtime from Node env)
+// Server-side: PUBLIC_API_URL (runtime from Node env)
 // Client-side: PUBLIC_API_URL (baked-in at build, available via Astro's PUBLIC_ convention)
 const BASE_URL = (
-  import.meta.env.ASTRO_API_URL ?? import.meta.env.PUBLIC_API_URL
+  import.meta.env.PUBLIC_API_URL ?? import.meta.env.PUBLIC_API_URL
 ) as string;
 
 function addErrorInterceptor(instance: AxiosInstance): AxiosInstance {

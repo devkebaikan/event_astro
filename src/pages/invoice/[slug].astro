@@ -21,40 +21,37 @@ if (!slug) {
 
 const invoice = await getInvoice(slug);
 
-const payment = invoice?.data?.payment_method ?? {};
-const donationAmount = invoice?.data?.nominal ?? 0;
-const isPaid = invoice?.data?.status === "Paid";
+const payment     = invoice?.data?.payment_method ?? {};
+const totalAmount = invoice?.data?.nominal ?? 0;
+const isPaid      = invoice?.data?.status === "Paid";
 const payment_url = invoice?.data?.payment_url;
-// const idProgram = invoice?.data.items[0].program.id ?? 0;
-
-const qrPayload =
-  payment?.name === "Qris"
-    ? invoice?.data?.third_party_detail?.qr_string ?? ""
-    : null;
+const qrPayload   = payment?.name === "Qris"
+  ? invoice?.data?.third_party_detail?.qr_string ?? ""
+  : null;
 
 ---
 
 <MainLayout
-  title="Invoice Donasi"
-  description="Invoice donasi Anda di Aksiberbagi.com. Lihat detail pembayaran dan instruksi untuk menyelesaikan donasi Anda."
+  title="Invoice Pembayaran"
+  description="Invoice pembayaran Anda di Aksiberbagi.com. Lihat detail dan instruksi untuk menyelesaikan transaksi Anda."
 >
   <Header type="notshare" text="Invoice" link="/" />
 
-  <!-- Main Content Wrapper -->
-  <section   
+  <section
     id="invoice-page"
     data-slug={slug}
-    data-amount={donationAmount}
+    data-amount={totalAmount}
     data-paid={isPaid}
-    data-payment-url={payment_url} 
+    data-payment-url={payment_url}
     data-qr-code={qrPayload}
     class="min-h-screen bg-gray-50"
   >
-    <div class="container bg-white">
+    <div class="container bg-white mt-[65px]">
       <div class="space-y-4">
-        <!-- Payment Deadline Section -->
+
+        <!-- Payment Deadline -->
         {
-          payment.name !== "OVO" && donationAmount !== 0 && (
+          payment.name !== "OVO" && totalAmount !== 0 && (
             <div class="bg-primary-500 rounded-b p-4 pt-20 text-white shadow-md">
 
               <h6 class="text-sm font-semibold mb-2">Batas waktu pembayaran</h6>
@@ -76,14 +73,13 @@ const qrPayload =
           )
         }
 
-        <!-- Payment Details Card -->
+        <!-- Payment Details -->
         <div class="bg-white rounded-md shadow-md overflow-hidden">
-          <!-- qris payment  -->
           {
             payment.name === "Qris" ? (
               <QrisPayment
                 qrPayload={qrPayload}
-                donationAmount={donationAmount}
+                donationAmount={totalAmount}
                 accountBehalf={payment.account_behalf}
                 imgUrl={payment.image_url}
               />
@@ -141,14 +137,14 @@ const qrPayload =
                     <div class="p-4 border-b border-gray-200">
                       <div class="flex justify-between items-center">
                         <div class="flex-1">
-                          <h6 class="text-xs text-gray-500 mb-1">Jumlah Donasi</h6>
+                          <h6 class="text-xs text-gray-500 mb-1">Total Pembayaran</h6>
                           <p class="text-2xl font-bold text-primary-600">
-                            {formatRupiah(donationAmount)}
+                            {formatRupiah(totalAmount)}
                           </p>
                         </div>
                         <button
                           class="ml-4 shrink-0 p-3 text-primary-600 border-2 border-gray-300 hover:border-primary-500 hover:bg-primary-100 rounded-md transition-all duration-200 copy-btn group"
-                          data-copy={donationAmount}
+                          data-copy={totalAmount}
                           aria-label="Copy donation amount"
                         >
                           <svg
@@ -209,7 +205,7 @@ const qrPayload =
             )
           }
 
-          <!-- Action Buttons -->
+          <!-- Actions -->
           <div class="p-4 space-y-3">
             {
               invoice?.data.items[0].program?.link !== "infaq" &&
@@ -239,7 +235,7 @@ const qrPayload =
           </div>
         </div>
 
-        <!-- Help Section -->
+        <!-- Help / Contact -->
         <div class="bg-white rounded-md shadow-md p-4">
           <h3 class="text-lg font-semibold text-gray-900 text-center mb-4">
             Ada yang ingin ditanyakan?
@@ -265,52 +261,43 @@ const qrPayload =
   </section>
 
 <script>
-import { showToast } from "@/lib/toast";
+  import { showToast } from "@/lib/toast";
+  import { sendInitialCheckoutEvent } from "@/lib/pixels";
+  import { trackBeginCheckout } from "@/lib/tracking";
 
-import { sendInitialCheckoutEvent } from "@/lib/pixels";
-import { trackBeginCheckout } from "@/lib/tracking";
+  document.addEventListener("DOMContentLoaded", () => {
+    const el = document.getElementById("invoice-page");
+    if (!el) return;
 
-document.addEventListener("DOMContentLoaded", () => {
-  const el = document.getElementById("invoice-page");
+    // ── Read data bridge ─────────────────────────────────────────────────
+    const slug           = el.dataset.slug;
+    const totalAmount = Number(el.dataset.amount || 0);
+    const isPaid      = el.dataset.paid === "true";
+    const paymentUrl  = el.dataset.paymentUrl;
+    const qrCode      = el.dataset.qrCode;
 
-  if (!el) return;
+    // ── Analytics ────────────────────────────────────────────────────────
+    sendInitialCheckoutEvent(slug, totalAmount);
+    trackBeginCheckout({ programId: slug || "", value: totalAmount });
 
-  const slug = el.dataset.slug;
-  const donationAmount = Number(el.dataset.amount || 0);
-  const isPaid = el.dataset.paid === "true";
-  const paymentUrl = el.dataset.paymentUrl;
-  const qrCode = el.dataset.qrCode
-  // const idProgram = el.dataset.idProgram;
-  
-  // console.log(idProgram)
- 
-  sendInitialCheckoutEvent(slug, donationAmount);
-  trackBeginCheckout({
-    programId: slug || "",
-    value: donationAmount,
-  });
+    // ── Auto-redirect ────────────────────────────────────────────────────
+    // if (isPaid) {
+    //   setTimeout(() => { window.location.href = `/track-donation/${slug}`; }, 500);
+    // } else if (paymentUrl && !qrCode) {
+    //   setTimeout(() => { window.location.href = paymentUrl; }, 3000);
+    // }
 
-  if (isPaid) {
-    setTimeout(() => {
-      window.location.href = `/track-donation/${slug}`;
-    }, 500);
-  } else if (paymentUrl && !qrCode) {
-    setTimeout(() => {
-      window.location.href = paymentUrl;
-    }, 3000);
-  }
-});
-
-// Copy to clipboard
-  document.querySelectorAll(".copy-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-      const textToCopy = button.getAttribute("data-copy");
-      if (textToCopy) {
-        navigator.clipboard
-          .writeText(String(textToCopy))
-          .then(() => showToast("Disalin ke Clipboard"))
-          .catch(() => showToast("Gagal menyalin", "error"));
-      }
+    // ── Copy to clipboard ────────────────────────────────────────────────
+    document.querySelectorAll(".copy-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        const text = button.getAttribute("data-copy");
+        if (text) {
+          navigator.clipboard
+            .writeText(String(text))
+            .then(() => showToast("Disalin ke Clipboard"))
+            .catch(() => showToast("Gagal menyalin", "error"));
+        }
+      });
     });
   });
 </script>

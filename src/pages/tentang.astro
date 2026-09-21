@@ -1,0 +1,298 @@
+---
+export const prerender = true;
+
+import Header from "@/components/layouts/Header.astro";
+import Footer from "@/components/layouts/Footer.astro";
+import MainLayout from "@/layouts/MainLayout.astro";
+
+const steps = [
+  {
+    number: "01",
+    title: "Pilih Program",
+    desc: "Jelajahi berbagai program kebaikan yang sudah terverifikasi dan pilih yang ingin Anda dukung.",
+    icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+  },
+  {
+    number: "02",
+    title: "Transfer Donasi",
+    desc: "Lakukan donasi via transfer bank, QRIS, atau dompet digital. Cepat, mudah, dan aman.",
+    icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
+  },
+  {
+    number: "03",
+    title: "Dana Disalurkan",
+    desc: "Tim kami memverifikasi dan langsung menyalurkan dana ke mitra terpercaya di lapangan.",
+    icon: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8",
+  },
+  {
+    number: "04",
+    title: "Terima Laporan",
+    desc: "Anda mendapatkan laporan kegiatan lengkap disertai foto dan dokumentasi nyata dari lapangan.",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+  },
+];
+
+const features = [
+  {
+    title: "100% Tersalurkan",
+    desc: "Setiap rupiah donasi Anda disalurkan penuh tanpa potongan biaya admin.",
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    color: "text-emerald-500",
+    bg: "bg-emerald-50",
+  },
+  {
+    title: "Mitra Terverifikasi",
+    desc: "Semua mitra penyalur telah diseleksi ketat dan memiliki rekam jejak terpercaya.",
+    icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z",
+    color: "text-blue-500",
+    bg: "bg-blue-50",
+  },
+  {
+    title: "Laporan Transparan",
+    desc: "Donatur menerima laporan nyata berupa foto, video, dan dokumentasi dari lokasi.",
+    icon: "M15 10l4.553-2.069A1 1 0 0121 8.82V15.18a1 1 0 01-1.447.89L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z",
+    color: "text-purple-500",
+    bg: "bg-purple-50",
+  },
+  {
+    title: "Teknologi Aman",
+    desc: "Platform terenkripsi SSL dengan sistem keamanan berlapis untuk transaksi Anda.",
+    icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
+    color: "text-orange-500",
+    bg: "bg-orange-50",
+  },
+];
+
+const stats = [
+  { value: "900+", label: "Program Selesai" },
+  { value: "100rb+", label: "Donatur Aktif" },
+  { value: "Rp 15M+", label: "Dana Tersalurkan" },
+  { value: "50+", label: "Mitra Aktif" },
+];
+
+const faqs = [
+  {
+    q: "Apa itu Proyek Salur?",
+    a: "Proyek Salur adalah program penyaluran donasi langsung dari donatur ke penerima manfaat melalui mitra terpercaya. Setiap program memiliki target, timeline, dan laporan yang transparan.",
+  },
+  {
+    q: "Apakah donasi saya benar-benar sampai ke penerima?",
+    a: "Ya, 100%. Kami menyalurkan seluruh donasi tanpa potongan biaya. Mitra kami di lapangan mendokumentasikan setiap kegiatan dan Anda akan mendapatkan laporan lengkap.",
+  },
+  {
+    q: "Bagaimana cara memilih program yang tepat?",
+    a: "Pilih berdasarkan kategori (pendidikan, kesehatan, kemanusiaan, masjid, dll), lokasi, atau jumlah yang ingin didonasikan. Setiap program mencantumkan detail tujuan dan perkembangan terkini.",
+  },
+  {
+    q: "Metode pembayaran apa saja yang tersedia?",
+    a: "Kami mendukung transfer bank (BCA, Mandiri, BNI, BSI), QRIS dari semua aplikasi dompet digital, serta Gopay, OVO, DANA, dan ShopeePay.",
+  },
+  {
+    q: "Bagaimana saya mendapatkan laporan donasi?",
+    a: "Laporan dikirimkan melalui WhatsApp atau email setelah kegiatan selesai. Anda juga bisa melihat laporan di halaman program yang Anda dukung kapan saja.",
+  },
+  {
+    q: "Apakah donasi bisa dikembalikan?",
+    a: "Dana yang sudah disalurkan tidak dapat dikembalikan. Namun jika terjadi kesalahan teknis (double transfer, nominal salah), segera hubungi tim kami dalam 24 jam untuk proses pengembalian.",
+  },
+  {
+    q: "Siapa yang mengelola Proyek Salur?",
+    a: "Proyek Salur dikelola oleh Yayasan Beramal Bersama yang terdaftar resmi di Kemenkumham dan berizin OJK. Laporan keuangan kami dipublikasikan secara berkala.",
+  },
+  {
+    q: "Apakah ada minimal donasi?",
+    a: "Tidak ada minimal donasi. Anda bisa berdonasi mulai dari Rp 1.000. Setiap kontribusi, besar maupun kecil, sangat berarti bagi penerima manfaat.",
+  },
+];
+---
+
+<MainLayout title="Tentang Proyek Salur" description="Proyek Salur adalah program penyaluran donasi langsung ke penerima manfaat melalui mitra terpercaya Beramalbersama.com.">
+  <Header type="notshare" text="Tentang Proyek Salur" />
+
+  <div class="container mx-auto min-h-screen bg-neutral-50 pt-[65px]">
+
+    <!-- Hero -->
+    <section class="relative bg-gradient-to-br from-primary-600 via-primary-500 to-teal-500 text-white overflow-hidden">
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-0 right-0 w-48 h-48 bg-white rounded-full -mr-16 -mt-16" />
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full -ml-10 -mb-10" />
+      </div>
+      <div class="relative px-6 pt-10 pb-12 text-center">
+        <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1.5 mb-5">
+          <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+          <span class="text-xs font-semibold">Tersalurkan Sejak 2020</span>
+        </div>
+        <h1 class="text-2xl font-black leading-tight m-0 mb-3">
+          Donasi Nyata,<br />Dampak Terasa
+        </h1>
+        <p class="text-sm text-white/80 leading-relaxed m-0 mb-6 max-w-xs mx-auto">
+          Proyek Salur memastikan setiap donasi Anda sampai ke tangan yang tepat dengan laporan transparan dari lapangan.
+        </p>
+        <a
+          href="/"
+          class="inline-flex items-center gap-2 bg-white text-primary-600 font-bold text-sm px-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+        >
+          Mulai Berdonasi
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="bg-white border-b border-neutral-100 shadow-sm">
+      <div class="grid grid-cols-2 divide-x divide-y divide-neutral-100">
+        {stats.map((s) => (
+          <div class="flex flex-col items-center py-5 px-2">
+            <p class="text-xl font-black text-primary-600 m-0 tracking-tight">{s.value}</p>
+            <p class="text-[10px] uppercase tracking-widest text-neutral-400 text-center m-0 mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- How it Works -->
+    <section class="px-4 py-8">
+      <div class="mb-6 text-center">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-primary-500 font-bold m-0 mb-1">Alur Donasi</p>
+        <h2 class="text-lg font-black text-neutral-900 m-0">Bagaimana Cara Kerjanya?</h2>
+        <p class="text-xs text-neutral-400 m-0 mt-1">Donasi Anda tersalurkan dalam 4 langkah mudah</p>
+      </div>
+
+      <div class="space-y-3">
+        {steps.map((step, i) => (
+          <div class="bg-white rounded-2xl shadow-sm border border-neutral-100 p-4 flex items-start gap-4">
+            <div class="shrink-0 flex flex-col items-center">
+              <div class="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center shadow-sm">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d={step.icon} />
+                </svg>
+              </div>
+              {i < steps.length - 1 && (
+                <div class="w-px h-6 bg-neutral-200 mt-2" />
+              )}
+            </div>
+            <div class="flex-1 pt-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[10px] font-black text-primary-300 tracking-widest">{step.number}</span>
+                <h3 class="text-sm font-bold text-neutral-800 m-0">{step.title}</h3>
+              </div>
+              <p class="text-xs text-neutral-500 leading-relaxed m-0">{step.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="px-4 pb-8">
+      <div class="mb-5 text-center">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-primary-500 font-bold m-0 mb-1">Keunggulan</p>
+        <h2 class="text-lg font-black text-neutral-900 m-0">Kenapa Pilih Proyek Salur?</h2>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        {features.map((f) => (
+          <div class="bg-white rounded-2xl shadow-sm border border-neutral-100 p-4">
+            <div class={`w-10 h-10 ${f.bg} rounded-xl flex items-center justify-center mb-3`}>
+              <svg class={`w-5 h-5 ${f.color}`} fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d={f.icon} />
+              </svg>
+            </div>
+            <h3 class="text-xs font-bold text-neutral-800 m-0 mb-1">{f.title}</h3>
+            <p class="text-[11px] text-neutral-500 leading-relaxed m-0">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Trust Banner -->
+    <section class="mx-4 mb-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-5 text-white text-center shadow-md">
+      <p class="text-xs font-semibold text-white/70 m-0 mb-1 uppercase tracking-wider">Terdaftar & Terverifikasi</p>
+      <h3 class="text-base font-black m-0 mb-3">Aman & Amanah</h3>
+      <div class="flex flex-wrap justify-center gap-2">
+        {["Kemenkumham RI", "OJK", "BAZNAS", "ISO 27001"].map((b) => (
+          <span class="text-[10px] font-bold bg-white/20 border border-white/30 px-2.5 py-1 rounded-full">
+            ✓ {b}
+          </span>
+        ))}
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="px-4 pb-8">
+      <div class="mb-5 text-center">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-primary-500 font-bold m-0 mb-1">FAQ</p>
+        <h2 class="text-lg font-black text-neutral-900 m-0">Pertanyaan Umum</h2>
+      </div>
+
+      <div class="space-y-2" id="faq-list">
+        {faqs.map((faq, i) => (
+          <div class="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
+            <button
+              class="faq-btn w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
+              data-index={i}
+            >
+              <span class="text-sm font-semibold text-neutral-800 leading-snug">{faq.q}</span>
+              <svg class="faq-icon w-4 h-4 text-neutral-400 shrink-0 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div class="faq-answer hidden px-4 pb-4">
+              <p class="text-xs text-neutral-500 leading-relaxed m-0">{faq.a}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="mx-4 mb-6 bg-white rounded-2xl shadow-sm border border-neutral-100 p-6 text-center">
+      <div class="w-14 h-14 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-primary-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+        </svg>
+      </div>
+      <h3 class="text-base font-bold text-neutral-900 m-0 mb-2">Siap Berbagi Kebaikan?</h3>
+      <p class="text-xs text-neutral-500 leading-relaxed m-0 mb-5">
+        Bergabung bersama 100.000+ donatur yang sudah mempercayakan donasi mereka kepada Proyek Salur.
+      </p>
+      <div class="flex flex-col gap-2">
+        <a
+          href="/"
+          class="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white text-sm font-bold rounded-xl transition-colors duration-200"
+        >
+          Pilih Program Kebaikan
+        </a>
+        <a
+          href="/kontak"
+          class="w-full py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-colors duration-200"
+        >
+          Hubungi Kami
+        </a>
+      </div>
+    </section>
+
+    <Footer />
+  </div>
+</MainLayout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".faq-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const answer = btn.nextElementSibling as HTMLElement;
+      const icon = btn.querySelector(".faq-icon") as HTMLElement;
+      const isOpen = !answer.classList.contains("hidden");
+
+      // close all
+      document.querySelectorAll(".faq-answer").forEach((a) => a.classList.add("hidden"));
+      document.querySelectorAll(".faq-icon").forEach((ic) => ic.classList.remove("rotate-180"));
+
+      if (!isOpen) {
+        answer.classList.remove("hidden");
+        icon?.classList.add("rotate-180");
+      }
+    });
+  });
+</script>

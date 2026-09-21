@@ -1,7 +1,6 @@
 import type { AxiosResponse } from "axios";
 import { publicApi, serverApi } from "./api";
 
-// ── Generic wrapper: returns null on error instead of throwing ────────────────
 // Non-generic dengan AxiosResponse eksplisit — hindari T={} inference issue
 async function safe(
   fn: () => Promise<AxiosResponse<any>>,
@@ -14,61 +13,6 @@ async function safe(
     console.error(`[API] ${label}:`, error);
     return null;
   }
-}
-
-export async function getCampaignRamadhan() {
-  return safe(
-    () => publicApi.get("/program-show/ramadhan"),
-    "getCampaignRamadhan",
-  );
-}
-
-export async function getCampaignShow(type: string) {
-  return safe(() => publicApi.get(`/program-show/${type}`), "getCampaignShow");
-}
-
-// Throws on error (caller handles)
-export async function getCampaignByLink(link: string) {
-  const { data } = await publicApi.get(`/program/link/${link}`);
-  return data;
-}
-
-export async function getReportByLink(link: string) {
-  return safe(
-    () =>
-      publicApi.get("/report", { params: { program_link: link, limit: 1 } }),
-    "getReportByLink",
-  );
-}
-
-export async function getDonorsByLink(link: string) {
-  return safe(
-    () =>
-      publicApi.get(`/program/link/${link}/donors`, {
-        params: { limit: 10, mode: "pagination", page: 1 },
-      }),
-    "getDonorsByLink",
-  );
-}
-
-export async function getFundraisersByLink(link: string) {
-  return safe(
-    () =>
-      publicApi.get(`/program/link/${link}/fundraisers`, {
-        params: { limit: 6, mode: "pagination", page: 1 },
-      }),
-    "getFundraisersByLink",
-  );
-}
-
-export async function getNominalOptions(link: string) {
-  return safe(
-    () =>
-      publicApi.get("/payment/nominal-option", {
-        params: { program_link: link },
-      }),
-    "getNominalOptions",
-  );
 }
 
 export async function getPaymentMethod(link: string) {
@@ -87,62 +31,6 @@ export async function getInvoice(inv: string | null) {
     "getInvoice",
   );
 }
-
-export async function getAllReportByLink(link: string | null) {
-  return safe(
-    () => publicApi.get("/report", { params: { program_link: link } }),
-    "getAllReportByLink",
-  );
-}
-
-export async function getProjectByLink(link: string | null) {
-  return safe(
-    () => publicApi.get("/project", { params: { program_link: link } }),
-    "getProjectByLink",
-  );
-}
-
-export async function getProjectSummaryByLink(link: string | null) {
-  return safe(
-    () => publicApi.get("/project/summary", { params: { program_link: link } }),
-    "getProjectSummaryByLink",
-  );
-}
-
-export async function getMitraSalurByLink(link: string | null) {
-  return safe(
-    () =>
-      publicApi.get("/program/mitra-salur", { params: { program_link: link } }),
-    "getMitraSalurByLink",
-  );
-}
-
-export async function getCampaignCategories() {
-  return safe(
-    () => publicApi.get("/program-category"),
-    "getCampaignCategories",
-  );
-}
-
-export interface CampaignParams {
-  limit?: number;
-  mode?: string;
-  page?: number;
-  category?: string | null;
-  search?: string | null;
-}
-
-export async function getAllCampaigns(params: CampaignParams = {}) {
-  // Strip null/undefined/empty to keep query string clean
-  const filtered = Object.fromEntries(
-    Object.entries(params).filter(([, v]) => v != null && v !== ""),
-  );
-  return safe(
-    () => publicApi.get("/program", { params: filtered }),
-    "getAllCampaigns",
-  );
-}
-
 // Throws if token is invalid — used as a guard
 export async function getIsTokenValid(token: string): Promise<boolean> {
   await serverApi(token).post("/validate-token");
@@ -151,25 +39,39 @@ export async function getIsTokenValid(token: string): Promise<boolean> {
 
 export async function getUserProfile(token: string) {
   return safe(
-    () => serverApi(token).get("/dashboard/my-account"),
+    () => serverApi(token).get("/dashboard/donatur/my-account"),
     "getUserProfile",
   );
 }
+// ── Event ─────────────────────────────────────────────────────────────────────
 
-export async function getRutinDetail(
-  slug: number | string,
-  token: string | null,
-) {
-  if (!token) return null;
+export interface EventListParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  mode?: "pagination" | "list";
+}
+
+export async function getEvents(params: EventListParams = {}) {
+  return safe(() => publicApi.get("/events", { params }), "getEvents");
+}
+
+export async function getEventBySlug(slug: string, token?: string | null) {
   return safe(
-    () => serverApi(token).get(`/rutin/detail/${slug}`),
-    "getRutinDetail",
+    () =>
+      token
+        ? serverApi(token).get(`/events/slug/${slug}`)
+        : publicApi.get(`/events/slug/${slug}`),
+    "getEventBySlug",
   );
 }
 
-export async function getCampaignSetUp(type: string) {
+export async function getEventByLink(link: string, token?: string | null) {
   return safe(
-    () => publicApi.get(`/program-setup/${type}`),
-    "getCampaignSetUp",
+    () =>
+      token
+        ? serverApi(token).get(`/events/slug/${link}`)
+        : publicApi.get(`/events/slug/${link}`),
+    "getEventByLink",
   );
 }

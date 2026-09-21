@@ -61,7 +61,7 @@ const hasAccountNumber = payment.account_number && payment.account_number !== 0;
                 </p>
               </div>
               <button
-                class="copy-btn p-2.5 border border-gray-300 rounded-xl text-teal-600 hover:bg-teal-50 hover:border-teal-400 transition-colors"
+                class="copy-btn p-2.5 border border-gray-300 rounded-xl text-primary-600 hover:bg-primary-50 hover:border-primary-400 transition-colors"
                 data-copy={String(payment.account_number)}
                 aria-label="Salin nomor rekening"
               >
@@ -80,12 +80,12 @@ const hasAccountNumber = payment.account_number && payment.account_number !== 0;
         >
           <div>
             <p class="text-xs text-gray-500 mb-0.5">Jumlah Donasi</p>
-            <p class="text-xl font-bold text-teal-600">
+            <p class="text-xl font-bold text-primary-600">
               {formatRupiah(donationAmount)}
             </p>
           </div>
           <button
-            class="copy-btn p-2.5 border border-gray-300 rounded-xl text-teal-600 hover:bg-teal-50 hover:border-teal-400 transition-colors"
+            class="copy-btn p-2.5 border border-gray-300 rounded-xl text-primary-600 hover:bg-primary-50 hover:border-primary-400 transition-colors"
             data-copy={String(donationAmount)}
             aria-label="Salin jumlah donasi"
           >
@@ -127,7 +127,7 @@ const hasAccountNumber = payment.account_number && payment.account_number !== 0;
       {/* ── Panduan Pembayaran ── */}
       <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-          <div class="w-1 h-5 bg-teal-500 rounded-full"></div>
+          <div class="w-1 h-5 bg-primary-500 rounded-full"></div>
           <h2 class="text-sm font-semibold text-gray-800">
             Panduan Pembayaran
           </h2>
@@ -141,7 +141,7 @@ const hasAccountNumber = payment.account_number && payment.account_number !== 0;
               "Pembayaran akan diverifikasi oleh Aksiberbagi.com. Waktu verifikasi paling lambat 1×24 jam untuk sesama bank, dan 2×24 jam di hari kerja jika antar bank yang berbeda.",
             ].map((step, i) => (
               <li class="flex gap-3">
-                <span class="w-6 h-6 rounded-full bg-teal-500 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                <span class="w-6 h-6 rounded-full bg-primary-500 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                   {i + 1}
                 </span>
                 <p
@@ -184,7 +184,7 @@ const hasAccountNumber = payment.account_number && payment.account_number !== 0;
                   ],
                 ].map(([title, desc]) => (
                   <div>
-                    <p class="text-xs font-semibold text-teal-600">{title}</p>
+                    <p class="text-xs font-semibold text-primary-600">{title}</p>
                     <p class="text-xs text-gray-500">{desc}</p>
                   </div>
                 ))

@@ -4,21 +4,20 @@ export const prerender = false;
 import Header from "@/components/layouts/Header.astro";
 import MainLayout from "@/layouts/MainLayout.astro";
 import { Image } from "astro:assets";
+import { getEvents } from "@/lib/FetchData";
 
-const API_URL = import.meta.env.ASTRO_API_URL;
 
-const url = new URL(`${API_URL}/event`);
-url.searchParams.set("all",   "true");
-url.searchParams.set("limit", "6");
-url.searchParams.set("mode",  "pagination");
-url.searchParams.set("page",  "1");
+const API_URL = import.meta.env.PUBLIC_API_URL;
 
-const res          = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-const data         = res.ok ? await res.json() : null;
-const initialEvents: any[] = (data?.data?.data ?? []).filter(
-  (e: any) => e.status !== "inactive"
-);
-const hasNextInit  = !!data?.data?.next_page_url;
+const eventsRes = await getEvents({ mode:'pagination', limit: 4 });
+
+// Filter untuk event aktif
+// const initialEvents: any[] = (eventsRes?.data?.data ?? []).filter(
+//   (e: any) => e.status !== "inactive",
+// );
+
+const initialEvents: any[] = (eventsRes?.data?.data ?? [])
+const hasNextInit = !!eventsRes?.data?.next_page_url;
 ---
 
 <MainLayout title="Event" description="Temukan event pilihan dan perluas wawasanmu bersama komunitas Aksiberbagi.">
@@ -38,6 +37,7 @@ const hasNextInit  = !!data?.data?.next_page_url;
     <div class="absolute inset-0 bg-gradient-to-t from-gray-50/45 via-black/10 to-transparent" />
   </section>
 
+  <!-- <ShowJsonData data={initialEvents}/> -->
   <!-- Main -->
   <div
     id="event-page"
@@ -93,7 +93,7 @@ const hasNextInit  = !!data?.data?.next_page_url;
     <div id="event-grid" class="grid grid-cols-2 gap-3">
       {initialEvents.map((event: any) => (
         <a
-          href={`/event/${event.link}`}
+          href={`/event/${event.slug}`}
           class="group block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-200 transition-all duration-200 overflow-hidden"
           data-status={event.status}
         >
@@ -146,11 +146,11 @@ const hasNextInit  = !!data?.data?.next_page_url;
             <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
               <img
                 src={event.mitra?.image}
-                alt={event.mitra?.name}
+                alt={event.mitra?.nama}
                 width="20" height="20"
                 class="w-5 h-5 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
               />
-              <span class="text-[10px] text-gray-400 truncate">{event.mitra?.name}</span>
+              <span class="text-[10px] text-gray-400 truncate">{event.mitra?.nama}</span>
             </div>
           </div>
         </a>
@@ -172,7 +172,7 @@ const hasNextInit  = !!data?.data?.next_page_url;
     </div>
 
     <!-- Load more -->
-    <div id="load-more-wrap" class={`flex justify-center mt-8 ${hasNextInit ? "" : "hidden"}`}>
+    <div id="load-more-wrap" class={`flex justify-center mt-8 ${!hasNextInit ? "" : "hidden"}`}>
       <button
         id="btn-load-more"
         type="button"
@@ -202,13 +202,11 @@ const hasNextInit  = !!data?.data?.next_page_url;
   const searchInput  = document.getElementById("search-input")   as HTMLInputElement;
   const btnSearch    = document.getElementById("btn-search")     as HTMLButtonElement;
   const searchLabel  = document.getElementById("search-label")   as HTMLElement;
-  const eventCount   = document.getElementById("event-count")    as HTMLElement;
 
   let currentPage  = 1;
   let currentQuery = "";
   let isFetching   = false;
-  let hasNext      = loadMoreWrap.classList.contains("hidden") ? false : true;
-  let activeCount  = 0;
+  let hasNext      = !loadMoreWrap.classList.contains("hidden");
 
   // ── Card template ─────────────────────────────────────────────────────────
   function renderCard(event: any): string {
@@ -223,7 +221,7 @@ const hasNextInit  = !!data?.data?.next_page_url;
       : `<svg class="w-3 h-3 text-primary-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/></svg><span class="truncate">${event.type?.name ?? ""} · ${event.mode ?? ""}</span>`;
 
     return `
-      <a href="/event/${event.link}"
+      <a href="/event/${event.slug}"
         class="group block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-200 transition-all duration-200 overflow-hidden">
         <div class="relative h-36 overflow-hidden ${isPast ? "bg-gray-200" : "bg-gray-100"}">
           <img src="${event.image}" alt="${event.title}" loading="lazy" decoding="async" class="${imgClass}" />
@@ -235,9 +233,9 @@ const hasNextInit  = !!data?.data?.next_page_url;
             ${event.title}
           </h3>
           <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
-            <img src="${event.mitra?.image ?? ""}" alt="${event.mitra?.name ?? ""}" width="20" height="20"
+            <img src="${event.mitra?.image ?? ""}" alt="${event.mitra?.nama ?? ""}" width="20" height="20"
               class="w-5 h-5 rounded-full object-cover ring-2 ring-primary-100 shrink-0" />
-            <span class="text-[10px] text-gray-400 truncate">${event.mitra?.name ?? ""}</span>
+            <span class="text-[10px] text-gray-400 truncate">${event.mitra?.nama ?? ""}</span>
           </div>
         </div>
       </a>`;
@@ -259,7 +257,7 @@ const hasNextInit  = !!data?.data?.next_page_url;
     }
 
     try {
-      const url = new URL(`${API_URL}/event`);
+      const url = new URL(`${API_URL}/events`);
       url.searchParams.set("all",   "true");
       url.searchParams.set("limit", "6");
       url.searchParams.set("mode",  "pagination");
@@ -274,22 +272,14 @@ const hasNextInit  = !!data?.data?.next_page_url;
 
       skeleton.classList.add("hidden");
 
-      if (!append) {
-        activeCount = events.filter((e: any) => e.status !== "pass_event").length;
-      } else {
-        activeCount += events.filter((e: any) => e.status !== "pass_event").length;
-      }
-
       if (events.length === 0 && !append) {
         emptyState.classList.remove("hidden");
         emptyDesc.textContent = query
           ? `Tidak ada event yang cocok dengan "${query}"`
           : "Belum ada event yang tersedia saat ini";
         btnClear.classList.toggle("hidden", !query);
-        eventCount.textContent = "0 event";
       } else {
         grid.insertAdjacentHTML("beforeend", events.map(renderCard).join(""));
-        eventCount.textContent = `${activeCount} event`;
       }
 
       loadMoreWrap.classList.toggle("hidden", !hasNext);
