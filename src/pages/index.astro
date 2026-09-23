@@ -10,11 +10,6 @@ const API_URL = import.meta.env.PUBLIC_API_URL;
 
 const eventsRes = await getEvents({ mode:'pagination', limit: 4 });
 
-// Filter untuk event aktif
-// const initialEvents: any[] = (eventsRes?.data?.data ?? []).filter(
-//   (e: any) => e.status !== "inactive",
-// );
-
 const initialEvents: any[] = (eventsRes?.data?.data ?? [])
 const hasNextInit = !!eventsRes?.data?.next_page_url;
 ---
