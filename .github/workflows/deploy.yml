@@ -25,11 +25,7 @@ jobs:
           ssh-keyscan -p $VPS_PORT -H "$VPS_HOST" >> ~/.ssh/known_hosts
 
           # Perondaan direktori target berdasarkan nama branch
-          if [ "$BRANCH_NAME" = "main" ]; then
-            APP_DIR="/var/www/akber-new/donasi-astro"
-          else
-            APP_DIR="/var/www/beramal-new/donasi_astro"
-          fi
+          APP_DIR="/var/www/beramal-new/donasi_astro"
 
           ssh -p $VPS_PORT -i ~/.ssh/id_rsa $VPS_USER@$VPS_HOST "APP_DIR=$APP_DIR BRANCH_NAME=$BRANCH_NAME bash -s" << 'EOF'
             # Load NVM & Node.js
