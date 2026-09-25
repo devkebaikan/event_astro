@@ -1,0 +1,61 @@
+name: Deploy Astro Application (PM2)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Server (via SSH)
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p $VPS_PORT -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+          # Perondaan direktori target berdasarkan nama branch
+          if [ "$BRANCH_NAME" = "main" ]; then
+            APP_DIR="/var/www/akber-new/donasi-astro"
+          else
+            APP_DIR="/var/www/beramal-new/donasi_astro"
+          fi
+
+          ssh -p $VPS_PORT -i ~/.ssh/id_rsa $VPS_USER@$VPS_HOST "APP_DIR=$APP_DIR BRANCH_NAME=$BRANCH_NAME bash -s" << 'EOF'
+            # Load NVM & Node.js
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm use 24
+
+            set -eo pipefail
+
+            git config --global --add safe.directory "$APP_DIR"
+            cd "$APP_DIR"
+
+            echo "==> Pulling latest code for branch $BRANCH_NAME at $APP_DIR..."
+            git pull origin "$BRANCH_NAME"
+
+            echo "==> Installing dependencies..."
+            yarn install --frozen-lockfile
+
+            echo "==> Building Astro project..."
+            yarn build
+
+            echo "==> Reloading PM2 process..."
+            pm2 startOrReload ecosystem.config.cjs --update-env
+
+            echo "==> Saving PM2 state..."
+            pm2 save
+
+            echo "Deploy Astro Completed Successfully!"
+          EOF
