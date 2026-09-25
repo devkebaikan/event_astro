@@ -24,8 +24,8 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p $VPS_PORT -H "$VPS_HOST" >> ~/.ssh/known_hosts
 
-          # Perondaan direktori target berdasarkan nama branch
-          APP_DIR="/var/www/beramal-new/donasi_astro"
+          # Set direktori target ke /var/www/beramal-new/event
+          APP_DIR="/var/www/beramal-new/event"
 
           ssh -p $VPS_PORT -i ~/.ssh/id_rsa $VPS_USER@$VPS_HOST "APP_DIR=$APP_DIR BRANCH_NAME=$BRANCH_NAME bash -s" << 'EOF'
             # Load NVM & Node.js
