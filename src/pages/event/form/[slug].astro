@@ -609,7 +609,7 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
         return;
       }
 
-      if(totalPrice > Number(saldo)) {
+      if(Number(paymentMethodId) === 3000 && totalPrice > Number(saldo)) {
         showToast("Maaf saldo anda tidak cukup", "error");
         return;
       }
