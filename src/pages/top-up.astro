@@ -5,17 +5,12 @@ import Header from "@/components/layouts/Header.astro";
 import MainLayout from "@/layouts/MainLayout.astro";
 import { formatCompactNumber } from "@/lib/formatter";
 import PaymentMethodModal from "@/components/ui/PaymentMethod.astro";
+import { getPaymentMethod } from "@/lib/FetchData";
 
 const API_URL = import.meta.env.PUBLIC_API_URL;
 
-const pmRes = await fetch(
-  `${API_URL}/payment/payment-method?program_link=infaq`,
-  {
-    headers: { Accept: "application/json" },
-  },
-);
-const pmData = pmRes.ok ? await pmRes.json() : null;
-const paymentMethods: any[] = (pmData?.data ?? []).filter(
+const pmRes = await getPaymentMethod("infaq");
+const paymentMethods: any[] = (pmRes?.data ?? []).filter(
   (m: any) => ["wallet", "VA", "bank"].includes(m.type) || m.name === "GoPay",
 );
 
@@ -214,7 +209,7 @@ const nominalOptions = [10000, 50000, 100000, 200000, 500000, 1000000];
     btnSubmit.textContent = "Memproses...";
 
     try {
-      const res = await fetch(`${API_URL}/transactions/store`, {
+      const res = await fetch("/api/transactions/store", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

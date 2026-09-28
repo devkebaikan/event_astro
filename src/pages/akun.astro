@@ -287,8 +287,6 @@ const iconPaths: Record<string, string> = {
 <script>
   import { showToast } from "@/lib/toast";
 
-  const API_URL = import.meta.env.PUBLIC_API_URL;
-
   document.addEventListener("DOMContentLoaded", () => {
     const btnLogout        = document.getElementById("btn-logout")         as HTMLButtonElement | null;
     const modal            = document.getElementById("logout-modal")       as HTMLElement;
@@ -318,10 +316,13 @@ const iconPaths: Record<string, string> = {
       btnConfirm.textContent = "Keluar...";
 
       try {
-        // Opsional: hit endpoint logout di server
-        await fetch(`${API_URL}/logout`, {
+        // Opsional: hit endpoint logout di server proxy
+        await fetch("/api/logout", {
           method: "POST",
           credentials: "include",
+          headers: {
+            Accept: "application/json",
+          },
         }).catch(() => {/* abaikan jika gagal, tetap hapus cookie */});
 
         // Hapus auth cookie

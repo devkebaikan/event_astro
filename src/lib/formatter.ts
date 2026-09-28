@@ -2,7 +2,7 @@
  * FORMAT UANG (RUPIAH)
  * ======================= */
 export function formatRupiah(
-  value: number | string,
+  value?: number | string | null,
   options?: {
     withSymbol?: boolean;
     minimumFractionDigits?: number;
@@ -21,7 +21,7 @@ export function formatRupiah(
  * FORMAT ANGKA RINGKAS
  * ======================= */
 export function formatCompactNumber(
-  value: number | string,
+  value?: number | string | null,
   options?: {
     withSymbol?: boolean;
     minimumFractionDigits?: number;
@@ -52,24 +52,32 @@ export function formatCompactNumber(
  * FORMAT TANGGAL (dd MMM yyyy)
  * ======================= */
 export function formatDate(
-  date: string | Date,
+  date?: string | Date | null,
   options?: Intl.DateTimeFormatOptions,
 ) {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "-";
+
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     ...options,
-  }).format(new Date(date));
+  }).format(d);
 }
 
 /* =======================
  * FORMAT TANGGAL + JAM
  * ======================= */
 export function formatDateTime(
-  date: string | Date,
+  date?: string | Date | null,
   options?: Intl.DateTimeFormatOptions,
 ) {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "-";
+
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "short",
@@ -77,16 +85,20 @@ export function formatDateTime(
     hour: "2-digit",
     minute: "2-digit",
     ...options,
-  }).format(new Date(date));
+  }).format(d);
 }
 
 /* =======================
  * WAKTU RELATIF
  * ======================= */
 
-export function timeAgoFormat(date: string | Date) {
+export function timeAgoFormat(date?: string | Date | null) {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "-";
+
   const now = new Date().getTime();
-  const past = new Date(date).getTime();
+  const past = d.getTime();
   const diff = now - past;
 
   if (diff < 0) return formatDate(date);
@@ -124,7 +136,7 @@ export function timeAgoFormat(date: string | Date) {
 /* =======================
  * INITIAL NAMA
  * ======================= */
-export function getInitialName(name: string) {
+export function getInitialName(name?: string | null) {
   if (!name) return "";
 
   return name
@@ -135,7 +147,7 @@ export function getInitialName(name: string) {
     .join("");
 }
 
-export function capitalizeFirstLetter(str: string) {
+export function capitalizeFirstLetter(str?: string | null) {
   if (!str) return "";
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
@@ -143,23 +155,25 @@ export function capitalizeFirstLetter(str: string) {
 /* =======================
  * FORMAT NUMBER
  * ======================= */
-export function formatNumber(value: number | string) {
+export function formatNumber(value?: number | string | null) {
+  if (value === null || value === undefined || value === "") return "";
   const numStr = value.toString().replace(/\D/g, "");
   if (!numStr) return "";
-  return parseInt(numStr).toLocaleString("id-ID");
+  return parseInt(numStr, 10).toLocaleString("id-ID");
 }
 
 /* =======================
  * FORMAT NUMBER SINGKAT (1.2 rb, 3.4 jt, dst)
  * ======================= */
 
-export function fmt(n: number): string {
-  if (n >= 1_000_000_000)
-    return `${(n / 1_000_000_000).toFixed(1).replace(".0", "")} M`;
-  if (n >= 1_000_000)
-    return `${(n / 1_000_000).toFixed(1).replace(".0", "")} jt`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)} rb`;
-  return n.toLocaleString("id-ID");
+export function fmt(n?: number | null): string {
+  const val = n ?? 0;
+  if (val >= 1_000_000_000)
+    return `${(val / 1_000_000_000).toFixed(1).replace(".0", "")} M`;
+  if (val >= 1_000_000)
+    return `${(val / 1_000_000).toFixed(1).replace(".0", "")} jt`;
+  if (val >= 1_000) return `${(val / 1_000).toFixed(0)} rb`;
+  return val.toLocaleString("id-ID");
 }
 
 /* =======================

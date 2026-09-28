@@ -18,18 +18,34 @@ const COOKIE_NAME = "authToken";
 // SERVER — gunakan di .astro frontmatter
 // =============================================================================
 
+const isServer = typeof window === "undefined";
+const CLIENT_KEY = (
+  isServer
+    ? (process.env.CLIENT_KEY ??
+       process.env.PUBLIC_CLIENT_KEY ??
+       import.meta.env.PUBLIC_CLIENT_KEY ??
+       "")
+    : (import.meta.env.PUBLIC_CLIENT_KEY ?? "")
+) as string;
+
 /** Baca token dari Astro cookies (server-side). */
 export function getServerToken(cookies: AstroCookies): string | null {
   return cookies.get(COOKIE_NAME)?.value ?? null;
 }
 
-/** Buat Authorization header untuk fetch ke API. */
-export function bearerHeaders(token: string): Record<string, string> {
-  return {
-    Authorization: `Bearer ${token}`,
+/** Buat Authorization & Client Key header untuk fetch ke API. */
+export function bearerHeaders(token?: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
   };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (CLIENT_KEY) {
+    headers["X-Client-Key"] = CLIENT_KEY;
+  }
+  return headers;
 }
 
 // =============================================================================

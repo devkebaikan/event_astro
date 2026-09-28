@@ -5,7 +5,6 @@ import Header from "@/components/layouts/Header.astro";
 import MainLayout from "@/layouts/MainLayout.astro";
 import { getInvoice } from "@/lib/FetchData";
 import { formatDateTime, formatRupiah } from "@/lib/formatter";
-
 import QrisPayment from "@/components/ui/QrisPayment.astro";
 
 interface Props {
@@ -21,43 +20,89 @@ if (!slug) {
 
 const invoice = await getInvoice(slug);
 
-const payment     = invoice?.data?.payment_method ?? {};
-const totalAmount = invoice?.data?.nominal ?? 0;
-const isPaid      = invoice?.data?.status === "Paid";
-const payment_url = invoice?.data?.payment_url;
-const qrPayload   = payment?.name === "Qris"
-  ? invoice?.data?.third_party_detail?.qr_string ?? ""
+const payment = invoice?.payment_method ?? invoice?.data?.payment_method ?? {};
+const thirdPartyDetail = invoice?.third_party_detail ?? invoice?.data?.third_party_detail ?? {};
+const donationAmount = invoice?.nominal ?? invoice?.data?.nominal ?? 0;
+const isPaid = (invoice?.status ?? invoice?.data?.status) === "Paid";
+const payment_url = invoice?.payment_url ?? invoice?.data?.payment_url;
+const firstItem = invoice?.items?.[0] ?? invoice?.data?.items?.[0];
+const lastPaymentTime = invoice?.last_payment_time ?? invoice?.data?.last_payment_time;
+
+const formatted = formatRupiah(donationAmount); // Rp 50.354
+const lastThree = formatted.slice(-3); // 354
+const firstPart = formatted.slice(0, -3); // Rp 50.
+
+// Deteksi jenis pembayaran berdasarkan field `bank` yang sudah dikirim backend
+const isQris = payment?.bank === "Qris" || payment?.name === "Qris";
+const isOvo = payment?.bank === "OVO" || payment?.name === "OVO";
+const isVA = !!(thirdPartyDetail?.account_number && thirdPartyDetail?.bank_code);
+
+// QRIS → generate QR dari qr_string, JANGAN redirect browser
+const qrPayload = isQris ? (thirdPartyDetail?.qr_string ?? "") : null;
+
+// VA → ambil nomor rekening & nama penerima dari third_party_detail,
+// karena payment_method.account_number di DB cuma placeholder "0"
+const vaAccountNumber = isVA
+  ? thirdPartyDetail?.account_number ??
+    thirdPartyDetail?.raw?.bill_payment?.receiver_bank_account?.account_number
+  : null;
+const vaAccountName = isVA
+  ? thirdPartyDetail?.account_holder ?? payment?.account_behalf
   : null;
 
+const displayAccountNumber = isVA ? vaAccountNumber : payment?.account_number;
+const displayAccountName = isVA ? vaAccountName : payment?.account_behalf;
+
+// Kasus: belum bayar, ada payment_url dari gateway yang memang BUTUH redirect
+// (bukan Qris/OVO/VA) → akan auto-redirect. Jangan render invoice card penuh
+// untuk kasus ini, cukup loading state.
+const willAutoRedirect =
+  !isPaid && !!payment_url && !qrPayload && !isOvo && !isVA;
 ---
 
 <MainLayout
-  title="Invoice Pembayaran"
-  description="Invoice pembayaran Anda di Aksiberbagi.com. Lihat detail dan instruksi untuk menyelesaikan transaksi Anda."
+  title="Invoice Donasi"
+  description="Invoice donasi Anda di Beramalbersama.com. Lihat detail pembayaran dan instruksi untuk menyelesaikan donasi Anda."
 >
-  <Header type="notshare" text="Invoice" link="/" />
+  <Header type="notshare" text="Invoice" link="/home" />
 
+  <!-- Main Content Wrapper -->
   <section
     id="invoice-page"
     data-slug={slug}
-    data-amount={totalAmount}
+    data-amount={donationAmount}
     data-paid={isPaid}
     data-payment-url={payment_url}
     data-qr-code={qrPayload}
-    class="min-h-screen bg-gray-50"
+    data-payment-type={isQris ? "qris" : isOvo ? "ovo" : isVA ? "va" : "other"}
+    class="min-h-screen"
   >
-    <div class="container bg-white mt-[65px]">
-      <div class="space-y-4">
-
-        <!-- Payment Deadline -->
-        {
-          payment.name !== "OVO" && totalAmount !== 0 && (
+    {
+      willAutoRedirect ? (
+        <div class="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
+          <div class="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" />
+          <p class="text-sm text-neutral-600">
+            Mengalihkan ke halaman pembayaran...
+          </p>
+          <a
+            href={payment_url}
+            id="btn-manual-redirect"
+            class="text-sm font-medium text-primary-600 underline"
+          >
+            Klik di sini jika tidak otomatis teralihkan
+          </a>
+        </div>
+      ) : (
+        <div class="container bg-neutral-50 min-h-screen">
+          <div class="space-y-4">
+            <!-- Payment Deadline Section -->
             <div class="bg-primary-500 rounded-b p-4 pt-20 text-white shadow-md">
-
-              <h6 class="text-sm font-semibold mb-2">Batas waktu pembayaran</h6>
+              <h6 class="text-sm font-semibold mb-2">
+                Batas waktu pembayaran
+              </h6>
               <div class="flex justify-between items-center text-sm">
                 <p class="font-medium">
-                  {formatDateTime(invoice?.data.last_payment_time)}
+                  {formatDateTime(lastPaymentTime)}
                 </p>
                 <div class="flex items-center gap-2">
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -70,235 +115,262 @@ const qrPayload   = payment?.name === "Qris"
                 </div>
               </div>
             </div>
-          )
-        }
 
-        <!-- Payment Details -->
-        <div class="bg-white rounded-md shadow-md overflow-hidden">
-          {
-            payment.name === "Qris" ? (
-              <QrisPayment
-                qrPayload={qrPayload}
-                donationAmount={totalAmount}
-                accountBehalf={payment.account_behalf}
-                imgUrl={payment.image_url}
-              />
-            ) : (
-              <Fragment>
-                <div
-                  class="bg-linear-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200"
-                >
-                  <p class="text-xs text-gray-600 mb-2">Transfer via</p>
-                  <div class="h-12 flex items-center justify-start">
-                    <img
-                      class="h-full max-w-full object-contain"
-                      alt={payment.name || "Payment method"}
-                      src={payment.image_url}
-                    />
-                  </div>
-                </div>
+            <!-- Payment Details Card -->
+            <div class="bg-white rounded-md shadow-md overflow-hidden">
+              {/* qris payment */}
+              {
+                isQris ? (
+                  <QrisPayment
+                    qrPayload={qrPayload}
+                    donationAmount={donationAmount}
+                    accountBehalf={displayAccountName}
+                    imgUrl={payment.image}
+                  />
+                ) : (
+                  <Fragment>
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
+                      <p class="text-xs text-gray-600 mb-2">Transfer via</p>
+                      <div class="h-12 flex items-center justify-start">
+                        <img
+                          class="h-full max-w-full object-contain"
+                          alt={payment.bank || payment.name || "Payment method"}
+                          src={payment.image}
+                        />
+                      </div>
+                    </div>
 
-                <!-- Account Number Section -->
-                {
-                  payment.account_number !== 0 && (
-                    <div class="p-4 border-b border-gray-200">
-                      <div class="flex justify-between items-center">
-                        <div class="flex-1">
-                          <h6 class="text-xs text-gray-500 mb-1">Nama Rekening</h6>
-                          <p class="text-base font-semibold text-gray-900">
-                            {payment.account_behalf}
-                          </p>
-                          <p class="text-lg font-mono font-bold text-gray-800 mt-1">
-                            {payment.account_number}
-                          </p>
+                    {/* Account Number Section (bank transfer / VA) */}
+                    {
+                      displayAccountNumber &&
+                        Number(displayAccountNumber) !== 0 && (
+                          <div class="p-4 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                              <div class="flex-1">
+                                <h6 class="text-xs text-gray-500 mb-1">
+                                  Nama Rekening
+                                </h6>
+                                <p class="text-sm font-semibold text-gray-900">
+                                  {displayAccountName}
+                                </p>
+                                <p class="text-lg font-mono font-bold text-gray-800 mt-1">
+                                  {displayAccountNumber}
+                                </p>
+                              </div>
+                              <button
+                                class="ml-4 shrink-0 py-1.5 px-4 text-xs font-medium text-white bg-primary-400 hover:bg-primary-500 rounded-full transition-all duration-200 copy-btn group"
+                                data-copy={displayAccountNumber}
+                                aria-label="Copy account number"
+                              >
+                                Salin
+                              </button>
+                            </div>
+                          </div>
+                        )
+                    }
+
+                    {/* Donation Amount Section */}
+                    {
+                      !isOvo && (
+                        <div class="p-4 border-b border-gray-200">
+                          <div class="flex justify-between items-center">
+                            <div class="flex-1">
+                              <h6 class="text-xs text-gray-500 mb-1">
+                                Jumlah Donasi
+                              </h6>
+                              <p class="text-xl font-bold ">
+                                {firstPart}
+                                <span class="text-primary-600">
+                                  {lastThree}
+                                </span>
+                              </p>
+                            </div>
+                            <button
+                              class="ml-4 shrink-0 py-1.5 px-4 text-xs font-medium text-white bg-primary-400 hover:bg-primary-500 rounded-full transition-all duration-200 copy-btn group"
+                              data-copy={donationAmount}
+                              aria-label="Copy donation amount"
+                            >
+                              Salin
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          class="ml-4 shrink-0 p-3 text-primary-600 border-2 border-gray-300 hover:border-primary-500 hover:bg-primary-100 rounded-md transition-all duration-200 copy-btn group"
-                          data-copy={payment.account_number}
-                          aria-label="Copy account number"
-                        >
+                      )
+                    }
+
+                    {/* Important Notice */}
+                    <div class="p-4 border-b border-gray-200">
+                      <div class="bg-amber-50 border-l-4 border-amber-400 rounded-r-lg p-4 shadow-sm">
+                        <div class="flex gap-3">
                           <svg
-                            class="w-5 h-5 group-hover:scale-110 transition-transform"
+                            class="text-amber-500 shrink-0 mt-0.5 w-4 h-4"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
-                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            <path
+                              fill-rule="evenodd"
+                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                              clip-rule="evenodd"
+                            />
                           </svg>
-                        </button>
-                      </div>
-                    </div>
-                  )
-                }
-
-                <!-- Donation Amount Section -->
-                {
-                  payment.name !== "OVO" && (
-                    <div class="p-4 border-b border-gray-200">
-                      <div class="flex justify-between items-center">
-                        <div class="flex-1">
-                          <h6 class="text-xs text-gray-500 mb-1">Total Pembayaran</h6>
-                          <p class="text-2xl font-bold text-primary-600">
-                            {formatRupiah(totalAmount)}
-                          </p>
+                          <div class="flex-1">
+                            <p class="text-[12px] text-amber-900 leading-relaxed">
+                              {isOvo ? (
+                                <span>
+                                  <span class="font-bold">PENTING!</span>{" "}
+                                  Silahkan masuk ke aplikasi{" "}
+                                  <span class="font-semibold">OVO</span> Anda
+                                  dan selesaikan pembayaran. Biasanya juga
+                                  sudah ada notifikasi pembayaran di HP OVO
+                                  Anda.
+                                </span>
+                              ) : (
+                                <span>
+                                  <span class="font-bold">PENTING!</span> Mohon
+                                  transfer tepat sampai 3 angka terakhir agar
+                                  donasi terverifikasi otomatis
+                                </span>
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <button
-                          class="ml-4 shrink-0 p-3 text-primary-600 border-2 border-gray-300 hover:border-primary-500 hover:bg-primary-100 rounded-md transition-all duration-200 copy-btn group"
-                          data-copy={totalAmount}
-                          aria-label="Copy donation amount"
-                        >
-                          <svg
-                            class="w-5 h-5 group-hover:scale-110 transition-transform"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                          </svg>
-                        </button>
                       </div>
                     </div>
-                  )
-                }
-
-                <!-- Important Notice -->
-                <div class="p-4 border-b border-gray-200">
-                  <div
-                    class="bg-amber-50 border-l-4 border-amber-400 rounded-r-lg p-4 shadow-sm"
-                  >
-                    <div class="flex gap-3">
-                      <svg
-                        class="text-amber-500 shrink-0 mt-0.5 w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                          clip-rule="evenodd"></path>
-                      </svg>
-                      <div class="flex-1">
-                        <p class="text-sm text-amber-900 leading-relaxed">
-                          {
-                            payment.name !== "OVO" ? (
-                              <span>
-                                <span class="font-bold">PENTING!</span> Mohon transfer
-                                tepat sampai 3 angka terakhir agar donasi
-                                terverifikasi otomatis
-                              </span>
-                            ) : (
-                              <span>
-                                <span class="font-bold">PENTING!</span> Mohon untuk
-                                cek aplikasi OVO anda sesuai dengan nomor Donatur
-                              </span>
-                            )
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <p class="text-xs text-gray-500 mt-3 text-center italic">
-                    *Jumlah akan didonasikan hingga 3 digit terakhir
-                  </p>
-                </div>
-              </Fragment>
-            )
-          }
-
-          <!-- Actions -->
-          <div class="p-4 space-y-3">
-            {
-              invoice?.data.items[0].program?.link !== "infaq" &&
-                invoice?.data.items[0].program != null && (
-                  <a
-                    id="btn-tracking-donasi"
-                    href={`/track-donation/${slug}`}
-                    class="block w-full text-center bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-6 rounded-md transition-colors duration-200 shadow-md hover:shadow-lg"
-                  >
-                    Tracking Donasi
-                  </a>
+                  </Fragment>
                 )
-            }
-            <a
-              id="btn-cara-pembayaran"
-              href={`/invoice/help/${slug}`}
-              class="flex items-center justify-center w-full text-center bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 px-6 rounded-md border-2 border-gray-300 hover:border-primary-500 transition-all duration-200"
-            >
-              <span>Cara Pembayaran</span>
-              <svg class="ml-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fill-rule="evenodd"
-                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                  clip-rule="evenodd"></path>
-              </svg>
-            </a>
-          </div>
-        </div>
+              }
 
-        <!-- Help / Contact -->
-        <div class="bg-white rounded-md shadow-md p-4">
-          <h3 class="text-lg font-semibold text-gray-900 text-center mb-4">
-            Ada yang ingin ditanyakan?
-          </h3>
-          <div class="space-y-3">
-            <a
-              href="https://api.whatsapp.com/send?phone=6281319964703&text=Assalamu%27alaikum"
-              class="flex items-center justify-center w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-md transition-colors duration-200 shadow-md hover:shadow-lg"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"
-                ></path>
-              </svg>
-              Chat Admin
-            </a>
+              {/* Action Buttons */}
+              <div class="p-4 space-y-2.5">
+                {
+                  firstItem?.program?.link !== "infaq" &&
+                    firstItem?.program != null && (
+                      <a
+                        id="btn-tracking-donasi"
+                        href={`/track-donation/${slug}`}
+                        class="group flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-medium text-sm transition-all duration-200 shadow-xs active:scale-[0.99]"
+                      >
+                        <span>Lacak Donasimu</span>
+                      </a>
+                    )
+                }
+
+                <a
+                  id="btn-cara-pembayaran"
+                  href={`/invoice/help/${slug}`}
+                  class="group flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-50 text-neutral-700 font-medium text-sm border border-neutral-200 hover:border-neutral-300 transition-all duration-200 active:scale-[0.99]"
+                >
+                  <svg
+                    class="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 transition-colors duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    />
+                  </svg>
+                  <span>Cara Pembayaran</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Help Section */}
+            <div class="bg-white rounded-md shadow-md p-4">
+              <h3 class="font-semibold text-gray-900 text-center mb-4">
+                Ada yang ingin ditanyakan?
+              </h3>
+              <div class="space-y-3">
+                <a
+                  href="https://api.whatsapp.com/send?phone=6281325521905&text=Assalamu%27alaikum"
+                  class="flex items-center justify-center w-full text-sm md:text-base bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-md transition-colors duration-200 shadow-md hover:shadow-lg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                  </svg>
+                  Chat Admin
+                </a>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      )
+    }
   </section>
 
-<script>
-  import { showToast } from "@/lib/toast";
-  import { sendInitialCheckoutEvent } from "@/lib/pixels";
-  import { trackBeginCheckout } from "@/lib/tracking";
+  <script>
+    import { showToast } from "@/lib/toast";
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const el = document.getElementById("invoice-page");
-    if (!el) return;
+    import { sendInitialCheckoutEvent } from "@/lib/pixels";
+    import { trackBeginCheckout, trackPurchase } from "@/lib/tracking";
 
-    // ── Read data bridge ─────────────────────────────────────────────────
-    const slug           = el.dataset.slug;
-    const totalAmount = Number(el.dataset.amount || 0);
-    const isPaid      = el.dataset.paid === "true";
-    const paymentUrl  = el.dataset.paymentUrl;
-    const qrCode      = el.dataset.qrCode;
+    let hasTracked = false;
 
-    // ── Analytics ────────────────────────────────────────────────────────
-    sendInitialCheckoutEvent(slug, totalAmount);
-    trackBeginCheckout({ programId: slug || "", value: totalAmount });
+    function initInvoicePage() {
+      const el = document.getElementById("invoice-page");
+      if (!el) return;
 
-    // ── Auto-redirect ────────────────────────────────────────────────────
-    // if (isPaid) {
-    //   setTimeout(() => { window.location.href = `/track-donation/${slug}`; }, 500);
-    // } else if (paymentUrl && !qrCode) {
-    //   setTimeout(() => { window.location.href = paymentUrl; }, 3000);
-    // }
+      const slug = el.dataset.slug;
+      const donationAmount = Number(el.dataset.amount || 0);
+      const isPaid = el.dataset.paid === "true";
+      const paymentUrl = el.dataset.paymentUrl;
+      const qrCode = el.dataset.qrCode;
+      const paymentType = el.dataset.paymentType; // "qris" | "ovo" | "va" | "other"
 
-    // ── Copy to clipboard ────────────────────────────────────────────────
+      // Tracking cukup dikirim sekali, jangan diulang tiap kali pageshow (mis. dari bfcache)
+      if (!hasTracked) {
+        hasTracked = true;
+        sendInitialCheckoutEvent(slug, donationAmount);
+        trackBeginCheckout({
+          programId: slug || "",
+          value: donationAmount,
+        });
+        trackPurchase({
+          invoice: slug || "",
+          programId: slug || "",
+          programName: "Donasi",
+          value: donationAmount,
+        });
+      }
+
+      if (isPaid) {
+        setTimeout(() => {
+          window.location.href = `/track-donation/${slug}`;
+        }, 500);
+      } else if (paymentUrl && !qrCode && paymentType === "other") {
+        // Cuma redirect untuk metode yang bukan Qris/OVO/VA
+        setTimeout(() => {
+          window.location.href = paymentUrl;
+        }, 3000);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", initInvoicePage);
+
+    // Saat user pencet Back dari halaman gateway, browser sering restore
+    // halaman ini dari bfcache — DOMContentLoaded TIDAK fire lagi di kasus itu,
+    // jadi redirect perlu dijalankan ulang lewat event pageshow.
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted) {
+        initInvoicePage();
+      }
+    });
+
+    // Copy to clipboard
     document.querySelectorAll(".copy-btn").forEach((button) => {
       button.addEventListener("click", () => {
-        const text = button.getAttribute("data-copy");
-        if (text) {
+        const textToCopy = button.getAttribute("data-copy");
+        if (textToCopy) {
           navigator.clipboard
-            .writeText(String(text))
-            .then(() => showToast("Disalin ke Clipboard"))
+            .writeText(String(textToCopy))
+            .then(() => showToast("Disalin ke Clipboard", "success"))
             .catch(() => showToast("Gagal menyalin", "error"));
         }
       });
     });
-  });
-</script>
+  </script>
 </MainLayout>

@@ -1,10 +1,8 @@
-import { getToken, isLoggedIn, bearerHeaders } from "@/lib/auth";
+import { getToken, isLoggedIn } from "@/lib/auth";
 
 const USER_REFF_KEY = "user_reff_code";
 const INCOMING_REFF_KEY = "incoming_reff_code";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
-const API_URL = (import.meta.env.PUBLIC_API_URL ?? "") as string;
 
 interface StoredIncomingReff {
   code: string;
@@ -30,8 +28,11 @@ export async function getUserReffCode(): Promise<string | null> {
     const token = getToken();
     if (!token) return null;
 
-    const res = await fetch(`${API_URL}/dashboard/donatur/my-account`, {
-      headers: bearerHeaders(token),
+    const res = await fetch("/api/dashboard/donatur/my-account", {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!res.ok) return null;

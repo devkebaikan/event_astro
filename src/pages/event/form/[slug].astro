@@ -10,15 +10,17 @@ import PaymentMethodModal from "@/components/ui/PaymentMethod.astro";
 import { getEventByLink, getPaymentMethod, getUserProfile } from "@/lib/FetchData";
 
 interface EventDetail {
-  id: string;
+  id: string | number;
   title: string;
-  image: string;
-  datetime: string;
-  price: string;
-  mode: string;
+  image?: string;
+  image_url?: string;
+  datetime?: string;
+  due_duetime?: string;
+  price: string | number;
+  mode?: string;
   slug: string;
-  event_type: { name: string };
-  reg_only: number | null;
+  event_type?: { id?: number; name?: string; slug?: string };
+  reg_only?: number | null;
 }
 
 interface User {
@@ -46,25 +48,32 @@ const account = user?.data ?? null;
 if (!eventData) return Astro.redirect(`/event/${slug}`);
 
 // Filter payment method di server (VA & bank)
-const rawPm: any[] = allPaymentMethods?.data ?? [];
+const rawPm: any[] = Array.isArray(allPaymentMethods?.data)
+  ? allPaymentMethods.data
+  : [];
 const paymentMethods = rawPm.filter(
-  (pm:any) => pm.type === "VA" || pm.type === "bank",
+  (pm: any) => pm?.type === "VA" || pm?.type === "bank",
 );
 
 const isLoggedIn = !!account;
+const saldoKebaikan = account?.dompet_kebaikan.saldo ?? 0;
 const regOnly = eventData.reg_only ?? 0;
 const isRegOnly = regOnly !== 0;
 const priceNum = Number(eventData.price) || 0;
 const isFree = priceNum === 0;
 
-const dateInfo = formatDate(eventData.datetime, {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
+const dateInfo = eventData.datetime
+  ? formatDate(eventData.datetime, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  : "-";
 
-const typeInfo = `${eventData.event_type.name} ${eventData.mode}`;
+const eventTypeName = eventData.event_type?.name || "Event";
+const eventMode = eventData.mode || "";
+const typeInfo = [eventTypeName, eventMode].filter(Boolean).join(" ");
 
 const headerText = isRegOnly
   ? "Selesaikan Pendaftaran Anda"
@@ -77,8 +86,19 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
   <Header type="notshare" text={headerText} link={`/event/${slug}`} />
 
   <main 
-   
+    data-form-config
+    data-slug={slug}
+    data-event-id={eventData.id}
+    data-event-price={priceNum}
+    data-saldo={saldoKebaikan}
+    data-is-reg-only={String(isRegOnly)}
+    data-is-logged-in={String(isLoggedIn)}
+    data-user-name={account?.name ?? ""}
+    data-user-phone={account?.phone ?? ""}
+    data-user-email={account?.email ?? ""}
+    data-submit-text={submitText}
     class="min-h-screen bg-linear-to-br from-slate-50 to-primary-100 pt-16 pb-32">
+    
     <div class="container py-4 space-y-4">
       <!-- User Info -->
       {isLoggedIn ? (
@@ -274,7 +294,7 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
             <p class="text-xs font-semibold text-gray-500 mb-3">KONFIRMASI PEMESANAN</p>
             <div class="flex gap-3 p-3 bg-gray-50 rounded-lg mb-3">
               <img
-                src={eventData.image}
+                src={eventData.image_url || eventData.image || ""}
                 alt={eventData.title}
                 width="80"
                 height="80"
@@ -337,7 +357,7 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       <button
         id="submit-btn"
         type="button"
-        class="w-full bg-primary-500 hover:bg-primary-600 active:scale-[0.98] text-white font-semibold py-3 rounded-lg transition-all duration-150 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+        class="w-full bg-secondary-500 hover:bg-secondary-600 active:scale-[0.98] text-white font-semibold py-3 rounded-lg transition-all duration-150 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
       >
         <span id="submit-btn-label">{submitText}</span>
       </button>
@@ -349,7 +369,7 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
     data-form-config
     data-slug={slug}
     data-api-url={API_URL}
-    data-event-id={eventData.id}
+    data-event-id={eventData.id ?? ""}
     data-event-price={String(priceNum)}
     data-is-reg-only={String(isRegOnly)}
     data-is-logged-in={String(isLoggedIn)}
@@ -379,8 +399,6 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
 
     // ── Read data bridge ───────────────────────────────────────────────────
     const {
-      slug = "",
-      apiUrl = "",
       eventId = "",
       eventPrice = "0",
       isRegOnly = "false",
@@ -389,6 +407,7 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
       userPhone = "",
       userEmail = "",
       submitText = "Lanjutkan",
+      saldo = 0,
     } = config.dataset;
 
     const priceNum       = Number(eventPrice) || 0;
@@ -523,7 +542,11 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
 
       applyDiscountBtn.disabled = true;
       try {
-        const res  = await fetch(`${apiUrl}/discount/code/${code}`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`/api/discount/code/${code}`, {
+          headers: {
+            Accept: "application/json",
+          },
+        });
         if (!res.ok) throw new Error("invalid");
         const json = await res.json();
         const data = json?.data as DiscountData | undefined;
@@ -586,6 +609,11 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
         return;
       }
 
+      if(totalPrice > Number(saldo)) {
+        showToast("Maaf saldo anda tidak cukup", "error");
+        return;
+      }
+
       if (discountData && computeDiscountAmount() > totalPrice) {
         showToast("Maaf, kode diskon melampaui total harga", "error");
         return;
@@ -617,7 +645,7 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
 
       try {
         const token = getToken();
-        const res   = await fetch(`${apiUrl}/transactions`, {
+        const res   = await fetch("/api/transactions", {
           method:  "POST",
           headers: {
             Accept:         "application/json",

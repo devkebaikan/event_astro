@@ -1,23 +1,49 @@
 ---
-const { paymentMethods = [] } = Astro.props;
+import { getServerToken } from "@/lib/auth";
+const {
+  paymentMethods = [],
+  showWallet = true,
+  showEwallet = true,
+  showVa = true,
+  showBank = true,
+  defaultWallet = true,
+} = Astro.props;
 
-const banks = (paymentMethods as any[]).filter(
-  (m: any) => m.type === "bank" && m.is_active === "true",
-);
-const vas = (paymentMethods as any[]).filter(
-  (m: any) => m.type === "VA" && m.is_active === "true",
-);
-const ewallets = (paymentMethods as any[]).filter(
-  (m: any) => m.type === "e_wallet" && m.is_active === "true",
-);
-const wallets = (paymentMethods as any[]).filter(
-  (m: any) => m.type === "wallet" && m.is_active === "true",
-);
+const activeMethods = (paymentMethods as any[]).filter((m: any) => {
+  const status = m?.is_active;
+  if (status === undefined || status === null || status === "") return true;
+  return ![false, "false", 0, "0"].includes(status);
+});
+
+// TAMBAHKAN BARIS INI UNTUK MELIHAT DATA DI TERMINAL
+// console.log("Data Active Methods:", activeMethods);
+
+const walletMethod =
+  activeMethods.find((m: any) => m.type === "dompet_kebaikan") ?? null;
+const banks = activeMethods.filter((m: any) => m.type === "bank");
+const vas = activeMethods.filter((m: any) => m.type === "virtual_account");
+const ewallets = activeMethods.filter((m: any) => m.type === "e_wallet");
+
+const isAuthenticated = getServerToken(Astro.cookies) !== null;
+const walletDisplay =
+  walletMethod && Object.keys(walletMethod).length > 0
+    ? walletMethod
+    : {
+        id: 3000,
+        name: "Saku Berbagi",
+        image_url: "",
+        type: "dompet_kebaikan",
+      };
+
+const currentPath = Astro.url.pathname + Astro.url.search;
+const loginUrl = `/auth/login?from=${encodeURIComponent(currentPath)}`;
 ---
 
-<!-- Backdrop -->
 <div
   id="payment-modal"
+  data-show-wallet={showWallet ? "true" : "false"}
+  data-default-wallet={defaultWallet ? "true" : "false"}
+  data-is-auth={isAuthenticated ? "true" : "false"}
   class="fixed inset-0 z-50 hidden items-center justify-center"
   aria-modal="true"
   role="dialog"
@@ -28,9 +54,10 @@ const wallets = (paymentMethods as any[]).filter(
   >
   </div>
 
+  <!-- <ShowJsonData data={{ wallets }} /> -->
   <!-- Bottom Sheet -->
   <div
-    class="absolute max-w-110 w-full left-1/2 -translate-x-1/2 -translate-y-1/2 top-1/2 bg-white rounded-xl max-h-[80vh] shadow-2xl"
+    class="absolute max-w-110 w-full left-1/2 -translate-x-1/2 -translate-y-1/2 top-1/2 bg-white rounded-xl max-h-[80vh] shadow-2xl flex flex-col overflow-hidden"
   >
     <!-- Header -->
     <div
@@ -61,28 +88,29 @@ const wallets = (paymentMethods as any[]).filter(
 
     <!-- Scrollable content -->
     <div class="overflow-y-auto flex-1 px-5 pb-8 pt-4 space-y-5">
-      <!-- Saku Berbagi (wallet) -->
+      <!-- Saku Kebaikan (wallet) -->
       {
-        wallets.length > 0 && (
+        showWallet && (
           <div>
             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-              Saku Berbagi
+              Saku Kebaikan
             </p>
             <div class="space-y-2">
-              {wallets.map((method: any) => (
+              {isAuthenticated ? (
                 <button
                   type="button"
                   class="payment-method-item w-full flex items-center gap-3 p-3.5 border border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all active:scale-[0.98]"
-                  data-id={method.id}
-                  data-name={method.name}
-                  data-image={method.image_url}
-                  data-type={method.type}
+                  data-wallet-item="true"
+                  data-id={walletDisplay.id}
+                  data-name={walletDisplay.name}
+                  data-image={walletDisplay.image_url}
+                  data-type={walletDisplay.type}
                 >
                   <div class="w-14 flex items-center justify-center shrink-0">
-                    {method.image_url ? (
+                    {walletDisplay.image_url ? (
                       <img
-                        src={method.image_url}
-                        alt={method.name}
+                        src={walletDisplay.image_url}
+                        alt={walletDisplay.name}
                         class="h-6 w-auto object-contain"
                       />
                     ) : (
@@ -104,58 +132,17 @@ const wallets = (paymentMethods as any[]).filter(
                       </div>
                     )}
                   </div>
-                  <span class="flex-1 text-left text-sm font-medium text-gray-800">
-                    {method.name}
-                  </span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="text-gray-300 shrink-0"
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-          </div>
-        )
-      }
-
-      <!-- Virtual Account -->
-      {
-        vas.length > 0 && (
-          <div>
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-              Virtual Account
-            </p>
-            <p class="text-[11px] text-gray-400 mb-2.5">
-              Konfirmasi otomatis · min. Rp10.000
-            </p>
-            <div class="space-y-2">
-              {vas.map((method: any) => (
-                <button
-                  type="button"
-                  class="payment-method-item w-full flex items-center gap-3 p-3.5 border border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all active:scale-[0.98]"
-                  data-id={method.id}
-                  data-name={method.name}
-                  data-image={method.image_url}
-                  data-type={method.type}
-                >
-                  <div class="w-14 flex items-center justify-center shrink-0">
-                    <img
-                      src={method.image_url}
-                      alt={method.name}
-                      class="h-6 w-auto object-contain"
-                    />
+                  <div class="flex-1 text-left">
+                    <p class="text-sm font-medium text-gray-800">
+                      {walletDisplay.name}
+                    </p>
+                    <p class="text-xs text-gray-400">
+                      Saldo: <span id="wallet-balance-value">Rp 0</span>
+                      <span id="wallet-balance-loading" class="hidden">
+                        · memuat...
+                      </span>
+                    </p>
                   </div>
-                  <span class="flex-1 text-left text-sm font-medium text-gray-800">
-                    {method.name}
-                  </span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -169,56 +156,58 @@ const wallets = (paymentMethods as any[]).filter(
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
-              ))}
-            </div>
-          </div>
-        )
-      }
-
-      <!-- Transfer Bank -->
-      {
-        banks.length > 0 && (
-          <div>
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-              Transfer Bank
-            </p>
-            <p class="text-[11px] text-gray-400 mb-2.5">
-              Verifikasi manual 1×24 jam · min. Rp10.000
-            </p>
-            <div class="space-y-2">
-              {banks.map((method: any) => (
-                <button
-                  type="button"
-                  class="payment-method-item w-full flex items-center gap-3 p-3.5 border border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all active:scale-[0.98]"
-                  data-id={method.id}
-                  data-name={method.name}
-                  data-image={method.image_url}
-                  data-type={method.type}
-                >
-                  <div class="w-14 flex items-center justify-center shrink-0">
-                    <img
-                      src={method.image_url}
-                      alt={method.name}
-                      class="h-6 w-auto object-contain"
-                    />
+              ) : (
+                <div class="w-full flex items-center justify-between gap-3 p-3.5 border border-gray-200 bg-gray-50/80 rounded-lg">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-14 flex items-center justify-center shrink-0">
+                      {walletDisplay.image_url ? (
+                        <img
+                          src={walletDisplay.image_url}
+                          alt={walletDisplay.name}
+                          class="h-6 w-auto object-contain opacity-50 grayscale"
+                        />
+                      ) : (
+                        <div class="w-8 h-8 rounded-xl bg-gray-200 flex items-center justify-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            class="text-gray-400"
+                          >
+                            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div class="flex-1 text-left min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <p class="text-sm font-medium text-gray-600 truncate">
+                          {walletDisplay.name}
+                        </p>
+                        <span class="text-[10px] font-medium bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded shrink-0">
+                          Perlu Login
+                        </span>
+                      </div>
+                      <p class="text-xs text-gray-400 truncate mt-0.5">
+                        Masuk untuk menggunakan saldo
+                      </p>
+                    </div>
                   </div>
-                  <span class="flex-1 text-left text-sm font-medium text-gray-800">
-                    {method.name}
-                  </span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="text-gray-300 shrink-0"
+                  <a
+                    id="wallet-login-btn"
+                    href={loginUrl}
+                    class="text-xs font-semibold text-white bg-secondary-500 hover:bg-secondary-600 active:scale-95 px-3 py-1.5 rounded-lg transition-all shrink-0 shadow-sm"
                   >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              ))}
+                    Login
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         )
@@ -226,7 +215,7 @@ const wallets = (paymentMethods as any[]).filter(
 
       <!-- E-Wallet / Pembayaran Instan -->
       {
-        ewallets.length > 0 && (
+        showEwallet && ewallets.length > 0 && (
           <div>
             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
               Pembayaran Instan
@@ -251,7 +240,105 @@ const wallets = (paymentMethods as any[]).filter(
                       class="h-6 w-auto object-contain"
                     />
                   </div>
-                  <span class="flex-1 text-left text-sm font-medium text-gray-800">
+                  <span class="flex-1 text-left text-xs md:text-sm font-medium text-gray-800">
+                    {method.name}
+                  </span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="text-gray-300 shrink-0"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Virtual Account -->
+      {
+        showVa && vas.length > 0 && (
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              Virtual Account
+            </p>
+            <p class="text-[11px] text-gray-400 mb-2.5">
+              Konfirmasi otomatis · min. Rp10.000
+            </p>
+            <div class="space-y-2">
+              {vas.map((method: any) => (
+                <button
+                  type="button"
+                  class="payment-method-item w-full flex items-center gap-3 p-3.5 border border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all active:scale-[0.98]"
+                  data-id={method.id}
+                  data-name={method.name}
+                  data-image={method.image_url}
+                  data-type={method.type}
+                >
+                  <div class="w-14 flex items-center justify-center shrink-0">
+                    <img
+                      src={method.image_url}
+                      alt={method.name}
+                      class="h-6 w-auto object-contain"
+                    />
+                  </div>
+                  <span class="flex-1 text-left text-xs md:text-sm font-medium text-gray-800">
+                    {method.name}
+                  </span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="text-gray-300 shrink-0"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Transfer Bank -->
+      {
+        showBank && banks.length > 0 && (
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              Transfer Bank
+            </p>
+            <p class="text-[11px] text-gray-400 mb-2.5">
+              Verifikasi manual 1×24 jam · min. Rp10.000
+            </p>
+            <div class="space-y-2">
+              {banks.map((method: any) => (
+                <button
+                  type="button"
+                  class="payment-method-item w-full flex items-center gap-3 p-3.5 border border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all active:scale-[0.98]"
+                  data-id={method.id}
+                  data-name={method.name}
+                  data-image={method.image_url}
+                  data-type={method.type}
+                >
+                  <div class="w-14 flex items-center justify-center shrink-0">
+                    <img
+                      src={method.image_url}
+                      alt={method.name}
+                      class="h-6 w-auto object-contain"
+                    />
+                  </div>
+                  <span class="flex-1 text-left text-xs md:text-sm font-medium text-gray-800">
                     {method.name}
                   </span>
                   <svg
@@ -277,10 +364,84 @@ const wallets = (paymentMethods as any[]).filter(
 </div>
 
 <script>
+  import { bearerHeaders, getToken, isLoggedIn } from "@/lib/auth";
+  import { formatRupiah } from "@/lib/formatter";
+
   const modal = document.getElementById("payment-modal");
   if (!modal) throw new Error("payment-modal not found");
 
   const backdrop = document.getElementById("modal-backdrop");
+  const walletItem = modal.querySelector<HTMLElement>(
+    '[data-wallet-item="true"]',
+  );
+  const walletBalanceValue = document.getElementById("wallet-balance-value");
+  const walletBalanceLoading = document.getElementById(
+    "wallet-balance-loading",
+  );
+
+  const isAuth = modal?.dataset.isAuth === "true" || isLoggedIn();
+  const shouldDefaultWallet = isAuth && modal?.dataset.defaultWallet === "true";
+
+  const guestWalletLoginBtn =
+    modal.querySelector<HTMLAnchorElement>("#wallet-login-btn");
+  if (guestWalletLoginBtn && typeof window !== "undefined") {
+    guestWalletLoginBtn.href = `/auth/login?from=${encodeURIComponent(
+      window.location.pathname + window.location.search,
+    )}`;
+  }
+
+  let walletFetched = false;
+  let walletFetching = false;
+
+  function getCachedSaldo(): number {
+    const raw = localStorage.getItem("saldo");
+    const value = Number(raw ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function renderWalletBalance(saldo: number, loading = false) {
+    if (walletBalanceValue) {
+      walletBalanceValue.textContent = formatRupiah(saldo);
+    }
+    walletBalanceLoading?.classList.toggle("hidden", !loading);
+  }
+
+  if (isLoggedIn()) {
+    renderWalletBalance(getCachedSaldo(), false);
+  }
+
+  async function fetchWalletBalance() {
+    if (!walletItem || walletFetched || walletFetching) return;
+    if (!isLoggedIn()) return;
+
+    const token = getToken();
+    if (!token) return;
+
+    walletFetching = true;
+    renderWalletBalance(getCachedSaldo(), true);
+
+    try {
+      const res = await fetch(`/api/dashboard/donatur/my-wallet`, {
+        headers: bearerHeaders(token),
+      });
+      if (!res.ok) return;
+
+      const json = await res.json();
+      const data = json?.data ?? {};
+
+      // dukung 2 format lama/baru:
+      // baru: { data: { saldo, history } }
+      // lama: { data: { dompet_kebaikan: { saldo } } }
+      const saldo = Number(data?.saldo ?? data?.dompet_kebaikan?.saldo ?? 0);
+      localStorage.setItem("saldo", String(saldo));
+      renderWalletBalance(saldo, false);
+      walletFetched = true;
+    } catch {
+      renderWalletBalance(getCachedSaldo(), false);
+    } finally {
+      walletFetching = false;
+    }
+  }
 
   function closeModal() {
     modal!.classList.add("hidden");
@@ -290,6 +451,25 @@ const wallets = (paymentMethods as any[]).filter(
   function openModal() {
     modal!.classList.remove("hidden");
     document.body.style.overflow = "hidden";
+    if (guestWalletLoginBtn) {
+      guestWalletLoginBtn.href = `/auth/login?from=${encodeURIComponent(
+        window.location.pathname + window.location.search,
+      )}`;
+    }
+    void fetchWalletBalance();
+  }
+
+  function emitSelected(item: HTMLElement) {
+    window.dispatchEvent(
+      new CustomEvent("payment:selected", {
+        detail: {
+          id: Number(item.dataset.id),
+          name: item.dataset.name,
+          image: item.dataset.image,
+          type: item.dataset.type,
+        },
+      }),
+    );
   }
 
   backdrop?.addEventListener("click", closeModal);
@@ -304,17 +484,12 @@ const wallets = (paymentMethods as any[]).filter(
     .querySelectorAll<HTMLElement>(".payment-method-item")
     .forEach((item) => {
       item.addEventListener("click", () => {
-        window.dispatchEvent(
-          new CustomEvent("payment:selected", {
-            detail: {
-              id: Number(item.dataset.id),
-              name: item.dataset.name,
-              image: item.dataset.image,
-              type: item.dataset.type,
-            },
-          }),
-        );
+        emitSelected(item);
         closeModal();
       });
     });
+
+  if (shouldDefaultWallet && walletItem) {
+    emitSelected(walletItem);
+  }
 </script>

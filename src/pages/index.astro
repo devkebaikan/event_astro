@@ -32,7 +32,7 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
   <div
     id="event-page"
     data-api-url={API_URL}
-    class="min-h-screen bg-gray-50 max-w-[480px] mx-auto px-4 pb-12"
+    class="bg-gray-50 max-w-[480px] mx-auto px-4 pb-12 min-h-[calc(100vh-130px)]"
   >
 
     <!-- Search -->
@@ -83,15 +83,15 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
     <div id="event-grid" class="grid grid-cols-2 gap-3">
       {initialEvents.map((event: any) => (
         <a
-          href={`/event/${event.slug}`}
+          href={`/event/${event.slug ?? ""}`}
           class="group block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-200 transition-all duration-200 overflow-hidden"
-          data-status={event.status}
+          data-status={event.status ?? ""}
         >
           <!-- Image -->
           <div class={`relative h-36 overflow-hidden ${event.status === "pass_event" ? "bg-gray-200" : "bg-gray-100"}`}>
             <img
-              src={event.image}
-              alt={event.title}
+              src={event.image_url ?? ""}
+              alt={event.title ?? "Event"}
               loading="lazy"
               decoding="async"
               class={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${event.status === "pass_event" ? "grayscale opacity-60" : ""}`}
@@ -121,7 +121,7 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
                     <svg class="w-3 h-3 text-primary-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
                     </svg>
-                    <span class="truncate">{event.type?.name} · {event.mode}</span>
+                    <span class="truncate">{(event.type?.name || event.event_type?.name || "Event")} {event.mode ? `· ${event.mode}` : ""}</span>
                   </>
                 )
               }
@@ -129,19 +129,25 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
 
             <!-- Title -->
             <h3 class="text-xs font-semibold text-gray-800 leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors duration-200 mb-2.5">
-              {event.title}
+              {event.title ?? ""}
             </h3>
 
             <!-- Mitra -->
-            <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
-              <img
-                src={event.mitra?.image}
-                alt={event.mitra?.nama}
-                width="20" height="20"
-                class="w-5 h-5 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
-              />
-              <span class="text-[10px] text-gray-400 truncate">{event.mitra?.nama}</span>
-            </div>
+            {
+              (event.mitra?.nama || event.mitra?.image) && (
+                <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
+                  {event.mitra?.image && (
+                    <img
+                      src={event.mitra.image}
+                      alt={event.mitra?.nama ?? "Mitra"}
+                      width="20" height="20"
+                      class="w-5 h-5 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
+                    />
+                  )}
+                  <span class="text-[10px] text-gray-400 truncate">{event.mitra?.nama ?? ""}</span>
+                </div>
+              )
+            }
           </div>
         </a>
       ))}
@@ -162,7 +168,7 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
     </div>
 
     <!-- Load more -->
-    <div id="load-more-wrap" class={`flex justify-center mt-8 ${!hasNextInit ? "" : "hidden"}`}>
+    <div id="load-more-wrap" class={`flex justify-center mt-8 ${hasNextInit ? "" : "hidden"}`}>
       <button
         id="btn-load-more"
         type="button"
@@ -247,14 +253,18 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
     }
 
     try {
-      const url = new URL(`${API_URL}/events`);
+      const url = new URL("/api/events", window.location.origin);
       url.searchParams.set("all",   "true");
       url.searchParams.set("limit", "6");
       url.searchParams.set("mode",  "pagination");
       url.searchParams.set("page",  String(page));
       if (query) url.searchParams.set("search", query);
 
-      const res  = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+      const res = await fetch(url.toString(), {
+        headers: {
+          Accept: "application/json",
+        },
+      });
       const data = res.ok ? await res.json() : null;
 
       const events: any[]  = (data?.data?.data ?? []).filter((e: any) => e.status !== "inactive");
