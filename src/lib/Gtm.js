@@ -5,7 +5,7 @@ export async function fetchGtm() {
       `${process.env.NEXT_PUBLIC_API_URL}/gtm/ids`,
       {
         params: {
-          web: "aksiberbagi.com",
+          web: "beramalbersama.com",
         },
       },
     );

@@ -25,7 +25,7 @@ export interface SeoProps {
 
 /** Konfigurasi global site — update sesuai project Anda */
 export const SITE_CONFIG = {
-  name: "Aksiberbagi.com",
+  name: "Beramalbersama.com",
   tagline: "Tagline website Anda",
   description:
     "Deskripsi default website Anda untuk halaman yang tidak mengeset deskripsi.",

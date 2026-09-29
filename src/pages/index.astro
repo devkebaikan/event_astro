@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 
+import BottomNav from "@/components/layouts/BottomNav.astro";
 import Header from "@/components/layouts/Header.astro";
 import MainLayout from "@/layouts/MainLayout.astro";
 import { getEvents } from "@/lib/FetchData";
@@ -14,7 +15,7 @@ const initialEvents: any[] = (eventsRes?.data?.data ?? [])
 const hasNextInit = !!eventsRes?.data?.next_page_url;
 ---
 
-<MainLayout title="Event" description="Temukan event pilihan dan perluas wawasanmu bersama komunitas Aksiberbagi.">
+<MainLayout title="Event" description="Temukan event pilihan dan perluas wawasanmu bersama komunitas Beramalbersama.">
   <Header type="onlyicon" />
 
   <!-- Hero -->
@@ -32,7 +33,7 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
   <div
     id="event-page"
     data-api-url={API_URL}
-    class="bg-gray-50 max-w-[480px] mx-auto px-4 pb-12 min-h-[calc(100vh-130px)]"
+    class="bg-gray-50 max-w-[480px] mx-auto px-4 pb-28 min-h-[calc(100vh-130px)]"
   >
 
     <!-- Search -->
@@ -182,6 +183,8 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
     </div>
 
   </div>
+
+  <BottomNav active="home" />
 </MainLayout>
 
 <script>
@@ -220,7 +223,7 @@ const hasNextInit = !!eventsRes?.data?.next_page_url;
       <a href="/event/${event.slug}"
         class="group block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-200 transition-all duration-200 overflow-hidden">
         <div class="relative h-36 overflow-hidden ${isPast ? "bg-gray-200" : "bg-gray-100"}">
-          <img src="${event.image}" alt="${event.title}" loading="lazy" decoding="async" class="${imgClass}" />
+          <img src="${event.image_url}" alt="${event.title}" loading="lazy" decoding="async" class="${imgClass}" />
           ${closedBadge}
         </div>
         <div class="p-3 ${isPast ? "bg-gray-50" : "bg-white"}">
