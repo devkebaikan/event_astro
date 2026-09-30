@@ -18,8 +18,7 @@ const items = [
 >
   <div
     class="flex items-center gap-1.5 p-1.5 rounded-full
-         bg-primary-300/80 backdrop-blur-2xl backdrop-saturate-150
-         border border-white/40
+         bg-primary-100/30 backdrop-blur-md border border-primary-100/30
          shadow-[0_8px_32px_rgba(0,0,0,0.12)]
          ring-1 ring-white/20"
   >
@@ -31,7 +30,7 @@ const items = [
             href={item.href}
             class={`group flex items-center justify-center transition-all duration-300 ease-out select-none ${
               isActive
-                ? "bg-white text-neutral-900 shadow-sm shadow-black/10 border border-white rounded-full px-6 py-2.5 gap-2 font-semibold text-sm"
+                ? "bg-white text-primary-700 shadow-sm shadow-black/10 border border-white rounded-full px-6 py-2.5 gap-2 font-semibold text-sm"
                 : "w-10 h-10 rounded-full text-neutral-500 hover:text-neutral-700 hover:bg-white/50 active:scale-95"
             }`}
             aria-current={isActive ? "page" : undefined}
