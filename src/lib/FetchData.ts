@@ -75,3 +75,25 @@ export async function getEventByLink(link: string, token?: string | null) {
     "getEventByLink",
   );
 }
+
+export interface MyTransactionEventParams {
+  filter?: "mendatang" | "selesai" | "semua" | string;
+  status?: "Paid" | "Pending" | "Canceled" | string;
+  mode?: "pagination" | "list" | string;
+  limit?: number;
+  page?: number;
+}
+
+export async function getMyTransactionEvents(
+  token: string,
+  params: MyTransactionEventParams = {},
+) {
+  return safe(
+    () =>
+      serverApi(token).get("/dashboard/donatur/my-transaction-event", {
+        params,
+      }),
+    "getMyTransactionEvents",
+  );
+}
+
