@@ -321,7 +321,7 @@ const iconPaths: Record<string, string> = {
         localStorage.removeItem("user_reff_code");
         localStorage.removeItem("save_reff_code");
 
-        window.location.href = "/home";
+        window.location.href = "/";
       } catch {
         showToast("Gagal keluar, coba lagi", "error");
         btnConfirm.disabled = false;
