@@ -67,8 +67,21 @@ const isEventType = rawTypeName.toLowerCase() === "event";
 
 const regOnly = eventData.reg_only ?? 0;
 const priceNum = Number(eventData.price) || 0;
+const cleanMetaText = (text?: string | null) => {
+  if (!text) return "";
+  return text
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const eventTitle = eventData.title || "Detail Event";
-const eventImage = eventData.image_url || eventData.image || "";
+const eventImage = eventData.image_url || "";
+const eventSummary =
+  cleanMetaText(eventData.summary) ||
+  cleanMetaText(eventData.description) ||
+  eventTitle;
 
 const rawDate = eventData.datetime || eventData.due_duetime;
 const dateInfo = rawDate
@@ -108,7 +121,15 @@ const ICON = {
 };
 ---
 
-<MainLayout title={eventTitle} description={eventData.summary || eventTitle}>
+<MainLayout
+  title={eventTitle}
+  description={eventSummary}
+  image={eventImage}
+  imageAlt={eventTitle}
+  type="article"
+  publishedTime={eventData.datetime || eventData.due_duetime}
+  author={eventData.mitra?.nama}
+>
   <Header type="title" text={eventTitle} link="/" />
 
   <main class="min-h-screen">

@@ -20,9 +20,10 @@ const {
 
 const siteUrl = Astro.site?.href ?? "https://example.com/";
 const pageUrl =
-  canonical ?? new URL(Astro.url.pathname, Astro.site ?? siteUrl).href;
+  canonical ?? (Astro.url?.href || new URL(Astro.url.pathname, Astro.site ?? siteUrl).href);
 const fullTitle = `${title} | ${SITE_CONFIG.name}`;
-const ogImage = image.startsWith("http") ? image : new URL(image, siteUrl).href;
+const rawImage = image && image.trim() !== "" ? image : SITE_CONFIG.ogImage;
+const ogImage = rawImage.startsWith("http") ? rawImage : new URL(rawImage, siteUrl).href;
 
 const jsonLd = JSON.stringify({
   "@context": "https://schema.org",
@@ -54,10 +55,15 @@ const jsonLd = JSON.stringify({
 <!-- Open Graph -->
 <meta property="og:type" content={type} />
 <meta property="og:site_name" content={SITE_CONFIG.name} />
-<meta property="og:title" content={fullTitle} />
+<meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={pageUrl} />
 <meta property="og:image" content={ogImage} />
+{
+  ogImage.startsWith("https://") && (
+    <meta property="og:image:secure_url" content={ogImage} />
+  )
+}
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content={imageAlt} />
@@ -83,7 +89,7 @@ const jsonLd = JSON.stringify({
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content={SITE_CONFIG.twitterHandle} />
-<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImage} />
 <meta name="twitter:image:alt" content={imageAlt} />

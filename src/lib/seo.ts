@@ -25,11 +25,11 @@ export interface SeoProps {
 
 /** Konfigurasi global site — update sesuai project Anda */
 export const SITE_CONFIG = {
-  name: "Beramalbersama.com",
+  name: "Beramalbersama",
   tagline: "Tagline website Anda",
   description:
     "Deskripsi default website Anda untuk halaman yang tidak mengeset deskripsi.",
   ogImage: "/og-default.png",
   locale: "id_ID",
-  twitterHandle: "@namasite",
+  twitterHandle: "@beramalbersama",
 } as const;
