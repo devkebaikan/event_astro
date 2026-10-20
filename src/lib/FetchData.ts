@@ -19,7 +19,7 @@ export async function getPaymentMethod(link: string) {
   return safe(
     () =>
       publicApi.get("/payment/payment-method", {
-        params: { program_link: link },
+        params: { usage:"penerima" },
       }),
     "getPaymentMethod",
   );
