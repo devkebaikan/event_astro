@@ -32,13 +32,17 @@ interface User {
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect("/");
 
-
 const token = getServerToken(Astro.cookies);
+if (!token) {
+  const currentPath = Astro.url.pathname + Astro.url.search;
+  return Astro.redirect(`/auth/login?from=${encodeURIComponent(currentPath)}`);
+}
+
 const API_URL = import.meta.env.PUBLIC_API_URL;
 
 const [eventRes, user, allPaymentMethods] = await Promise.all([
   getEventByLink(slug, token),
-  token ? getUserProfile(token) : Promise.resolve(null),
+  getUserProfile(token),
   getPaymentMethod(slug),
 ]);
 
@@ -654,16 +658,22 @@ const submitText = isRegOnly ? "Lanjutkan Pendaftaran" : "Lanjutkan Pembayaran";
           },
           body: JSON.stringify(cleaned),
         });
-        if (!res.ok) throw new Error("transaction failed");
-        const json    = await res.json();
+
+        const json = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          const errorMsg = json?.error || json?.message || "Transaksi gagal, silakan coba lagi";
+          throw new Error(errorMsg);
+        }
+
         const invoice = json?.data?.invoice;
         if (!invoice) throw new Error("invoice missing");
 
         sessionStorage.removeItem("eventFormData");
         window.location.href = `/invoice/${invoice}`;
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        showToast("Transaksi gagal, silakan coba lagi", "error");
+        showToast(err?.message || "Transaksi gagal, silakan coba lagi", "error");
         isSubmitting       = false;
         submitBtn.disabled = false;
         if (submitBtnLabel) submitBtnLabel.textContent = submitText;

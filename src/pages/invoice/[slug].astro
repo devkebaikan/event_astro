@@ -4,8 +4,11 @@ export const prerender = false;
 import Header from "@/components/layouts/Header.astro";
 import MainLayout from "@/layouts/MainLayout.astro";
 import { getInvoice } from "@/lib/FetchData";
+import InvoicePaidState from "@/components/invoice/InvoicePaidState.astro";
+import InvoiceCanceledState from "@/components/invoice/InvoiceCanceledState.astro";
+import InvoiceFreeState from "@/components/invoice/InvoiceFreeState.astro";
+import InvoicePendingState from "@/components/invoice/InvoicePendingState.astro";
 import { formatDateTime, formatRupiah } from "@/lib/formatter";
-import QrisPayment from "@/components/ui/QrisPayment.astro";
 
 interface Props {
   invoice: any;
@@ -24,56 +27,69 @@ const payment = invoice?.data?.payment_method ?? {};
 const thirdPartyDetail = invoice?.data?.third_party_detail ?? {};
 const donationAmount = invoice?.data?.nominal ?? 0;
 const isPaid = invoice?.data?.status === "Paid";
-const isCanceled = invoice?.data?.status === "Canceled" || invoice?.data?.status === "Expired";
+const isCanceled =
+  invoice?.data?.status === "Canceled" || invoice?.data?.status === "Expired";
 const isFreeEvent = donationAmount === 0;
 const payment_url = invoice?.data?.payment_url;
 const firstItem = invoice?.data?.items?.[0] ?? invoice?.items?.[0] ?? {};
 const eventInfo = firstItem?.event ?? invoice?.data?.event ?? {};
-const eventName = firstItem?.name ?? eventInfo?.title ?? firstItem?.title ?? "Tiket Event";
+const eventName =
+  firstItem?.name ?? eventInfo?.title ?? firstItem?.title ?? "Tiket Event";
 const eventSlug = eventInfo?.slug ?? "";
-const eventImage = eventInfo?.image_url ?? eventInfo?.image ?? firstItem?.image_url ?? "";
+const eventImage =
+  eventInfo?.image_url ?? eventInfo?.image ?? firstItem?.image_url ?? "";
 const eventWaGrup = eventInfo?.wa_grup ?? invoice?.data?.wa_grup ?? null;
-const lastPaymentTime = invoice?.data?.last_payment_time;
-const paymentDate = invoice?.data?.payment_date ?? invoice?.data?.updated_at ?? null;
+const lastPaymentTime =
+  invoice?.data?.last_payment_time ??
+  invoice?.data?.payment_deadline_at ??
+  null;
+const rawPaymentDate =
+  invoice?.data?.payment_date ?? invoice?.data?.updated_at ?? null;
+const paymentDate = rawPaymentDate ? formatDateTime(rawPaymentDate) : null;
 
 const formatted = isFreeEvent ? "Gratis (Rp 0)" : formatRupiah(donationAmount);
 const lastThree = donationAmount > 0 ? formatted.slice(-3) : "";
 const firstPart = donationAmount > 0 ? formatted.slice(0, -3) : "Rp 0";
 
-// Deteksi jenis pembayaran berdasarkan field `bank` yang sudah dikirim backend
+// Deteksi jenis pembayaran
 const isQris = payment?.bank === "Qris" || payment?.name === "Qris";
 const isOvo = payment?.bank === "OVO" || payment?.name === "OVO";
-const isVA = !!(thirdPartyDetail?.account_number && thirdPartyDetail?.bank_code);
+const isVA = !!(
+  thirdPartyDetail?.account_number && thirdPartyDetail?.bank_code
+);
 
-// QRIS → generate QR dari qr_string, JANGAN redirect browser
+// QRIS payload
 const qrPayload = isQris ? (thirdPartyDetail?.qr_string ?? "") : null;
 
-// VA → ambil nomor rekening & nama penerima dari third_party_detail,
-// karena payment_method.account_number di DB cuma placeholder "0"
+// VA account details
 const vaAccountNumber = isVA
-  ? thirdPartyDetail?.account_number ??
-    thirdPartyDetail?.raw?.bill_payment?.receiver_bank_account?.account_number
+  ? (thirdPartyDetail?.account_number ??
+    thirdPartyDetail?.raw?.bill_payment?.receiver_bank_account?.account_number)
   : null;
 const vaAccountName = isVA
-  ? thirdPartyDetail?.account_holder ?? payment?.account_behalf
+  ? (thirdPartyDetail?.account_holder ?? payment?.account_behalf)
   : null;
 
 const displayAccountNumber = isVA ? vaAccountNumber : payment?.account_number;
 const displayAccountName = isVA ? vaAccountName : payment?.account_behalf;
 
-// Kasus: belum bayar, ada payment_url dari gateway yang memang BUTUH redirect
-// (bukan Qris/OVO/VA) → akan auto-redirect. Jangan render invoice card penuh
-// untuk kasus ini, cukup loading state.
+// Redirect gateway jika perlu
 const willAutoRedirect =
-  !isPaid && !isCanceled && !isFreeEvent && !!payment_url && !qrPayload && !isOvo && !isVA;
+  !isPaid &&
+  !isCanceled &&
+  !isFreeEvent &&
+  !!payment_url &&
+  !qrPayload &&
+  !isOvo &&
+  !isVA;
 
 const pageTitle = isPaid
   ? "Pembayaran Berhasil - Invoice"
   : isCanceled
-  ? "Transaksi Dibatalkan - Invoice"
-  : isFreeEvent
-  ? "Pendaftaran Event Berhasil - Invoice"
-  : "Invoice Pembayaran Event";
+    ? "Transaksi Dibatalkan - Invoice"
+    : isFreeEvent
+      ? "Pendaftaran Event Berhasil - Invoice"
+      : "Invoice Pembayaran Event";
 ---
 
 <MainLayout
@@ -81,6 +97,8 @@ const pageTitle = isPaid
   description="Detail invoice pendaftaran dan pembayaran event Anda."
 >
   <Header type="notshare" text="Invoice Event" link="/" />
+
+  <!-- <ShowJsonData data={invoice} /> -->
 
   <!-- Main Content Wrapper -->
   <section
@@ -93,7 +111,6 @@ const pageTitle = isPaid
     data-payment-type={isQris ? "qris" : isOvo ? "ovo" : isVA ? "va" : "other"}
     class="min-h-screen"
   >
-  <!-- <ShowJsonData data={invoice} /> -->
     {
       willAutoRedirect ? (
         <div class="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
@@ -110,645 +127,122 @@ const pageTitle = isPaid
           </a>
         </div>
       ) : isPaid ? (
-        /* ==================== STATE SUDAH SUKSES / TERBAYAR ==================== */
-        <div class="container bg-neutral-50 min-h-screen pb-16 pt-16">
-          <div class="max-w-[480px] mx-auto space-y-4">
-            
-            {/* Header Bersih / Simpel */}
-            <div class="bg-white rounded-2xl p-6 text-center shadow-xs border border-gray-100 flex flex-col items-center">
-              {/* Scalloped / Flower Badge Icon Sukses */}
-              <div class="relative w-20 h-20 flex items-center justify-center mb-3">
-                <div class="absolute inset-0 bg-emerald-100/70 rounded-full"></div>
-                <div class="relative w-12 h-12 flex items-center justify-center text-emerald-500">
-                  <svg class="w-full h-full drop-shadow-xs" viewBox="0 0 48 48" fill="currentColor">
-                    <path d="M21.2 4.4a3.8 3.8 0 0 1 5.6 0l2 2.1c1 1.1 2.5 1.7 4 1.5l2.9-.3a3.8 3.8 0 0 1 4.2 3.8l.2 2.9c.1 1.5.9 2.9 2.2 3.6l2.5 1.5a3.8 3.8 0 0 1 1.7 5.3l-1.5 2.5a4.7 4.7 0 0 0-.6 4.2l1 2.7a3.8 3.8 0 0 1-2.4 5l-2.8.9a4.7 4.7 0 0 0-3.1 3l-.9 2.8a3.8 3.8 0 0 1-4.9 2.5l-2.7-1a4.7 4.7 0 0 0-4.2.6l-2.5 1.5a3.8 3.8 0 0 1-5.3-1.7l-1.5-2.5a4.7 4.7 0 0 0-3.6-2.2l-2.9-.2a3.8 3.8 0 0 1-3.8-4.2l.3-2.9c.2-1.5-.4-3-1.5-4l-2.1-2a3.8 3.8 0 0 1 0-5.6l2.1-2c1.1-1 1.7-2.5 1.5-4l-.3-2.9a3.8 3.8 0 0 1 3.8-4.2l2.9.2c1.5.1 2.9-.9 3.6-2.2l1.5-2.5a3.8 3.8 0 0 1 5.3-1.7l2.5 1.5c1.3.8 3 .8 4.2-.6l2-2.1Z" />
-                  </svg>
-                  <svg class="w-6 h-6 text-white absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              </div>
-
-              <h1 class="text-lg font-bold text-gray-900 mb-1">
-                {donationAmount === 0 ? "Pendaftaran Berhasil" : "Pembayaran Berhasil"}
-              </h1>
-              <p class="text-xs text-gray-500 max-w-[280px] leading-relaxed">
-                {donationAmount === 0
-                  ? "Terima kasih! Tiket acara Anda telah aktif dan terdaftar."
-                  : "Terima kasih! Pembayaran tiket acara Anda telah terverifikasi."}
-              </p>
-            </div>
-
-            {/* Kartu Rincian Transaksi & Tiket */}
-            <div class="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden divide-y divide-gray-100 text-xs">
-              <div class="p-4 flex items-center justify-between">
-                <div>
-                  <span class="text-[11px] text-gray-400 block font-medium">Nomor Invoice</span>
-                  <span class="font-mono font-bold text-gray-800">{slug}</span>
-                </div>
-                <div class="text-right">
-                  <span class="text-[11px] text-gray-400 block font-medium">Status</span>
-                  <span class="inline-flex items-center gap-1 font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 text-[11px]">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Berhasil
-                  </span>
-                </div>
-              </div>
-
-              {/* Event Info */}
-              {eventName && (
-                <div class="p-4 flex items-center gap-3">
-                  {eventImage ? (
-                    <img
-                      src={eventImage}
-                      alt={eventName}
-                      class="w-12 h-12 rounded-xl object-cover border border-gray-100 shrink-0"
-                    />
-                  ) : (
-                    <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 text-gray-400 flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div class="min-w-0 flex-1">
-                    <span class="text-[10px] font-semibold text-primary-600 uppercase tracking-wider block">Acara</span>
-                    <h2 class="text-xs font-bold text-gray-900 truncate">{eventName}</h2>
-                    {eventSlug && (
-                      <a href={`/event/${eventSlug}`} class="text-[11px] text-gray-400 hover:text-primary-600 transition-colors inline-block mt-0.5">
-                        Lihat detail acara &rarr;
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Detail Pembayaran */}
-              <div class="p-4 space-y-2">
-                <div class="flex justify-between items-center text-gray-500">
-                  <span>Metode Pembayaran</span>
-                  <span class="font-medium text-gray-800">{payment?.name || payment?.bank || "Pembayaran Langsung"}</span>
-                </div>
-                {paymentDate && (
-                  <div class="flex justify-between items-center text-gray-500">
-                    <span>Waktu Pembayaran</span>
-                    <span class="font-medium text-gray-800">{formatDateTime(paymentDate)}</span>
-                  </div>
-                )}
-                <div class="flex justify-between items-center pt-2 font-bold text-sm">
-                  <span class="text-gray-700">Total Pembayaran</span>
-                  <span class="text-gray-900">{formatted}</span>
-                </div>
-              </div>
-
-              {/* WhatsApp Group jika ada */}
-              {eventWaGrup && (
-                <div class="p-4 bg-emerald-50/40 flex items-start gap-3">
-                  <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 mt-0.5">
-                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                    </svg>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-bold text-gray-900">Grup WhatsApp Peserta</p>
-                    <p class="text-[11px] text-gray-500 mt-0.5">Dapatkan info akses link acara dan koordinasi lainnya.</p>
-                    <a
-                      href={eventWaGrup}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="inline-block mt-2 font-semibold text-emerald-600 hover:text-emerald-700 bg-white border border-emerald-200 px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      Gabung Grup &rarr;
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div class="p-4 space-y-2 bg-gray-50/50">
-                <a
-                  href="/event-saya"
-                  class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-xs transition-colors shadow-xs active:scale-[0.99]"
-                >
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                  </svg>
-                  <span>Lihat di Event Saya</span>
-                </a>
-
-                <a
-                  href="/"
-                  class="flex items-center justify-center w-full py-2.5 px-4 rounded-xl bg-white hover:bg-gray-50 text-gray-600 font-medium text-xs border border-gray-200 transition-colors"
-                >
-                  Kembali ke Beranda
-                </a>
-              </div>
-            </div>
-
-            {/* Help WhatsApp */}
-            <div class="text-center pt-2">
-              <a
-                href="https://api.whatsapp.com/send?phone=6281325521905&text=Assalamu%27alaikum"
-                class="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span>Butuh bantuan seputar acara?</span>
-                <span class="text-primary-600 font-semibold underline">Chat Admin</span>
-              </a>
-            </div>
-
-          </div>
-        </div>
+        <InvoicePaidState
+          slug={slug}
+          donationAmount={donationAmount}
+          eventName={eventName}
+          eventImage={eventImage}
+          eventSlug={eventSlug}
+          paymentName={payment?.name || payment?.bank}
+          paymentDate={paymentDate}
+          eventWaGrup={eventWaGrup}
+          formattedAmount={formatted}
+        />
       ) : isCanceled ? (
-        /* ==================== STATE TRANSAKSI DIBATALKAN ==================== */
-        <div class="container bg-neutral-50 min-h-screen pb-16 pt-20">
-          <div class="max-w-[440px] mx-auto space-y-4">
-            
-            {/* Header Bersih / Dibatalkan */}
-            <div class="bg-white rounded-2xl p-6 text-center shadow-xs border border-gray-100 flex flex-col items-center">
-              {/* Scalloped / Flower Badge Icon Dibatalkan (Rose/Merah) */}
-              <div class="relative w-20 h-20 flex items-center justify-center mb-3">
-                <div class="absolute inset-0 bg-rose-100/70 rounded-full"></div>
-                <div class="relative w-12 h-12 flex items-center justify-center text-rose-500">
-                  <svg class="w-full h-full drop-shadow-xs" viewBox="0 0 48 48" fill="currentColor">
-                    <path d="M21.2 4.4a3.8 3.8 0 0 1 5.6 0l2 2.1c1 1.1 2.5 1.7 4 1.5l2.9-.3a3.8 3.8 0 0 1 4.2 3.8l.2 2.9c.1 1.5.9 2.9 2.2 3.6l2.5 1.5a3.8 3.8 0 0 1 1.7 5.3l-1.5 2.5a4.7 4.7 0 0 0-.6 4.2l1 2.7a3.8 3.8 0 0 1-2.4 5l-2.8.9a4.7 4.7 0 0 0-3.1 3l-.9 2.8a3.8 3.8 0 0 1-4.9 2.5l-2.7-1a4.7 4.7 0 0 0-4.2.6l-2.5 1.5a3.8 3.8 0 0 1-5.3-1.7l-1.5-2.5a4.7 4.7 0 0 0-3.6-2.2l-2.9-.2a3.8 3.8 0 0 1-3.8-4.2l.3-2.9c.2-1.5-.4-3-1.5-4l-2.1-2a3.8 3.8 0 0 1 0-5.6l2.1-2c1.1-1 1.7-2.5 1.5-4l-.3-2.9a3.8 3.8 0 0 1 3.8-4.2l2.9.2c1.5.1 2.9-.9 3.6-2.2l1.5-2.5a3.8 3.8 0 0 1 5.3-1.7l2.5 1.5c1.3.8 3 .8 4.2-.6l2-2.1Z" />
-                  </svg>
-                  <svg class="w-5 h-5 text-white absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-              </div>
-
-              <h1 class="text-lg font-bold text-gray-900 mb-1">
-                Transaksi Dibatalkan
-              </h1>
-              <p class="text-xs text-gray-500 max-w-[280px] leading-relaxed">
-                Waktu pembayaran telah berakhir atau transaksi ini telah dibatalkan.
-              </p>
-            </div>
-
-            {/* Kartu Rincian Transaksi */}
-            <div class="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden divide-y divide-gray-100 text-xs">
-              <div class="p-4 flex items-center justify-between">
-                <div>
-                  <span class="text-[11px] text-gray-400 block font-medium">Nomor Invoice</span>
-                  <span class="font-mono font-bold text-gray-800">{slug}</span>
-                </div>
-                <div class="text-right">
-                  <span class="text-[11px] text-gray-400 block font-medium">Status</span>
-                  <span class="inline-flex items-center gap-1 font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100 text-[11px]">
-                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                    Dibatalkan
-                  </span>
-                </div>
-              </div>
-
-              {/* Event Info */}
-              {eventName && (
-                <div class="p-4 flex items-center gap-3">
-                  {eventImage ? (
-                    <img
-                      src={eventImage}
-                      alt={eventName}
-                      class="w-12 h-12 rounded-xl object-cover border border-gray-100 shrink-0 opacity-80"
-                    />
-                  ) : (
-                    <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 text-gray-400 flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div class="min-w-0 flex-1">
-                    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Acara</span>
-                    <h2 class="text-xs font-bold text-gray-800 truncate">{eventName}</h2>
-                    {eventSlug && (
-                      <a href={`/event/${eventSlug}`} class="text-[11px] text-primary-600 hover:underline inline-block mt-0.5">
-                        Daftar ulang acara ini &rarr;
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Detail Pembayaran */}
-              <div class="p-4 space-y-2">
-                <div class="flex justify-between items-center text-gray-500">
-                  <span>Metode Pembayaran</span>
-                  <span class="font-medium text-gray-800">{payment?.name || payment?.bank || "-"}</span>
-                </div>
-                <div class="flex justify-between items-center pt-2 font-bold text-sm">
-                  <span class="text-gray-700">Total Nominal</span>
-                  <span class="text-gray-900">{formatted}</span>
-                </div>
-              </div>
-
-              {/* Action Buttons Dibatalkan */}
-              <div class="p-4 space-y-2 bg-gray-50/50">
-                {eventSlug ? (
-                  <a
-                    href={`/event/${eventSlug}`}
-                    class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-xs transition-colors shadow-xs active:scale-[0.99]"
-                  >
-                    <span>Daftar Ulang Event</span>
-                  </a>
-                ) : (
-                  <a
-                    href="/"
-                    class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-xs transition-colors shadow-xs active:scale-[0.99]"
-                  >
-                    <span>Cari Event Lainnya</span>
-                  </a>
-                )}
-
-                <a
-                  href="/event-saya"
-                  class="flex items-center justify-center w-full py-2.5 px-4 rounded-xl bg-white hover:bg-gray-50 text-gray-600 font-medium text-xs border border-gray-200 transition-colors"
-                >
-                  Kembali ke Event Saya
-                </a>
-              </div>
-            </div>
-
-            {/* Help WhatsApp */}
-            <div class="text-center pt-2">
-              <a
-                href="https://api.whatsapp.com/send?phone=6281325521905&text=Assalamu%27alaikum"
-                class="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span>Ada pertanyaan?</span>
-                <span class="text-primary-600 font-semibold underline">Hubungi Admin</span>
-              </a>
-            </div>
-
-          </div>
-        </div>
+        <InvoiceCanceledState
+          slug={slug}
+          eventName={eventName}
+          eventImage={eventImage}
+          eventSlug={eventSlug}
+          paymentName={payment?.name || payment?.bank}
+          formattedAmount={formatted}
+        />
       ) : isFreeEvent ? (
-        /* ==================== STATE EVENT GRATIS (NOMINAL = 0, BELUM PAID) ==================== */
-        <div class="min-h-screen bg-gray-50/60 pb-16 pt-20 px-4">
-          <div class="max-w-[440px] mx-auto space-y-4">
-            
-            {/* Header Success Free Event */}
-            <div class="bg-white rounded-2xl p-6 text-center shadow-xs border border-gray-100 flex flex-col items-center">
-              {/* Scalloped / Badge Success Icon */}
-              <div class="relative w-20 h-20 flex items-center justify-center mb-3">
-                <div class="absolute inset-0 bg-emerald-100/70 rounded-full"></div>
-                <div class="relative w-12 h-12 flex items-center justify-center text-emerald-500">
-                  <svg class="w-full h-full drop-shadow-xs" viewBox="0 0 48 48" fill="currentColor">
-                    <path d="M21.2 4.4a3.8 3.8 0 0 1 5.6 0l2 2.1c1 1.1 2.5 1.7 4 1.5l2.9-.3a3.8 3.8 0 0 1 4.2 3.8l.2 2.9c.1 1.5.9 2.9 2.2 3.6l2.5 1.5a3.8 3.8 0 0 1 1.7 5.3l-1.5 2.5a4.7 4.7 0 0 0-.6 4.2l1 2.7a3.8 3.8 0 0 1-2.4 5l-2.8.9a4.7 4.7 0 0 0-3.1 3l-.9 2.8a3.8 3.8 0 0 1-4.9 2.5l-2.7-1a4.7 4.7 0 0 0-4.2.6l-2.5 1.5a3.8 3.8 0 0 1-5.3-1.7l-1.5-2.5a4.7 4.7 0 0 0-3.6-2.2l-2.9-.2a3.8 3.8 0 0 1-3.8-4.2l.3-2.9c.2-1.5-.4-3-1.5-4l-2.1-2a3.8 3.8 0 0 1 0-5.6l2.1-2c1.1-1 1.7-2.5 1.5-4l-.3-2.9a3.8 3.8 0 0 1 3.8-4.2l2.9.2c1.5.1 2.9-.9 3.6-2.2l1.5-2.5a3.8 3.8 0 0 1 5.3-1.7l2.5 1.5c1.3.8 3 .8 4.2-.6l2-2.1Z" />
-                  </svg>
-                  <svg class="w-6 h-6 text-white absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              </div>
-
-              <span class="inline-block px-2.5 py-0.5 mb-2 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
-                Event Gratis
-              </span>
-              <h1 class="text-lg font-bold text-gray-900">Pendaftaran Diterima</h1>
-              <p class="text-xs text-gray-500 mt-1 max-w-[280px]">
-                Tidak ada biaya pembayaran yang diperlukan untuk mengikuti event ini.
-              </p>
-            </div>
-
-            {/* Event & Registrant Details Card */}
-            <div class="bg-white rounded-2xl shadow-xs border border-gray-100 divide-y divide-gray-100 text-xs">
-              
-              {/* Nomor Registrasi & Status */}
-              <div class="p-4 flex items-center justify-between">
-                <div>
-                  <span class="text-[10px] uppercase font-medium text-gray-400 block tracking-wider">No. Registrasi</span>
-                  <span class="font-mono font-semibold text-gray-800">{slug}</span>
-                </div>
-                <div class="text-right">
-                  <span class="text-[10px] uppercase font-medium text-gray-400 block tracking-wider">Biaya Tiket</span>
-                  <span class="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 text-[11px]">
-                    Gratis (Rp 0)
-                  </span>
-                </div>
-              </div>
-
-              {/* Event Info */}
-              {eventName && (
-                <div class="p-4 flex items-center gap-3">
-                  {eventImage ? (
-                    <img
-                      src={eventImage}
-                      alt={eventName}
-                      class="w-12 h-12 rounded-xl object-cover border border-gray-100 shrink-0"
-                    />
-                  ) : (
-                    <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 text-gray-400 flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div class="min-w-0 flex-1">
-                    <span class="text-[10px] font-semibold text-primary-600 uppercase tracking-wider block">Acara</span>
-                    <h2 class="text-xs font-bold text-gray-900 truncate">{eventName}</h2>
-                    {eventSlug && (
-                      <a href={`/event/${eventSlug}`} class="text-[11px] text-gray-400 hover:text-primary-600 transition-colors inline-block mt-0.5">
-                        Lihat detail acara &rarr;
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* WhatsApp Group jika ada */}
-              {eventWaGrup && (
-                <div class="p-4 bg-emerald-50/40 flex items-start gap-3">
-                  <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 mt-0.5">
-                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                    </svg>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-bold text-gray-900">Grup WhatsApp Peserta</p>
-                    <p class="text-[11px] text-gray-500 mt-0.5">Dapatkan info akses link acara dan koordinasi lainnya.</p>
-                    <a
-                      href={eventWaGrup}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="inline-block mt-2 font-semibold text-emerald-600 hover:text-emerald-700 bg-white border border-emerald-200 px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      Gabung Grup &rarr;
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div class="p-4 space-y-2 bg-gray-50/50">
-                <a
-                  href="/event-saya"
-                  class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-xs transition-colors shadow-xs active:scale-[0.99]"
-                >
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                  </svg>
-                  <span>Lihat di Event Saya</span>
-                </a>
-
-                <a
-                  href="/"
-                  class="flex items-center justify-center w-full py-2.5 px-4 rounded-xl bg-white hover:bg-gray-50 text-gray-600 font-medium text-xs border border-gray-200 transition-colors"
-                >
-                  Jelajahi Event Lainnya
-                </a>
-              </div>
-            </div>
-
-            {/* Help WhatsApp */}
-            <div class="text-center pt-2">
-              <a
-                href="https://api.whatsapp.com/send?phone=6281325521905&text=Assalamu%27alaikum"
-                class="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span>Butuh bantuan?</span>
-                <span class="text-primary-600 font-semibold underline">Hubungi Admin</span>
-              </a>
-            </div>
-
-          </div>
-        </div>
+        <InvoiceFreeState
+          slug={slug}
+          eventName={eventName}
+          eventImage={eventImage}
+          eventSlug={eventSlug}
+          eventWaGrup={eventWaGrup}
+        />
       ) : (
-        /* ==================== STATE MENUNGGU PEMBAYARAN (DEFAULT / BERBAYAR) ==================== */
-        <div class="container bg-neutral-50 min-h-screen">
-          <div class="space-y-4">
-            <!-- Payment Deadline Section -->
-            <div class="bg-primary-500 rounded-b p-4 pt-20 text-white shadow-md">
-              <h6 class="text-sm font-semibold mb-2">
-                Batas waktu pembayaran
-              </h6>
-              <div class="flex justify-between items-center text-sm">
-                <p class="font-medium">
-                  {formatDateTime(lastPaymentTime)}
-                </p>
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- Payment Details Card -->
-            <div class="bg-white rounded-md shadow-md overflow-hidden">
-              {/* qris payment */}
-              {
-                isQris ? (
-                  <QrisPayment
-                    qrPayload={qrPayload}
-                    donationAmount={donationAmount}
-                    accountBehalf={displayAccountName}
-                    imgUrl={payment.image}
-                  />
-                ) : (
-                  <Fragment>
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
-                      <p class="text-xs text-gray-600 mb-2">Transfer via</p>
-                      <div class="h-12 flex items-center justify-start">
-                        <img
-                          class="h-full max-w-full object-contain"
-                          alt={payment.bank || payment.name || "Payment method"}
-                          src={payment.image}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Account Number Section (bank transfer / VA) */}
-                    {
-                      displayAccountNumber &&
-                        Number(displayAccountNumber) !== 0 && (
-                          <div class="p-4 border-b border-gray-200">
-                            <div class="flex justify-between items-center">
-                              <div class="flex-1">
-                                <h6 class="text-xs text-gray-500 mb-1">
-                                  Nama Rekening
-                                </h6>
-                                <p class="text-sm font-semibold text-gray-900">
-                                  {displayAccountName}
-                                </p>
-                                <p class="text-lg font-mono font-bold text-gray-800 mt-1">
-                                  {displayAccountNumber}
-                                </p>
-                              </div>
-                              <button
-                                class="ml-4 shrink-0 py-1.5 px-4 text-xs font-medium text-white bg-primary-400 hover:bg-primary-500 rounded-full transition-all duration-200 copy-btn group"
-                                data-copy={displayAccountNumber}
-                                aria-label="Copy account number"
-                              >
-                                Salin
-                              </button>
-                            </div>
-                          </div>
-                        )
-                    }
-
-                    {/* Donation Amount Section */}
-                    {
-                      !isOvo && (
-                        <div class="p-4 border-b border-gray-200">
-                          <div class="flex justify-between items-center">
-                            <div class="flex-1">
-                              <h6 class="text-xs text-gray-500 mb-1">
-                                Jumlah Pembayaran
-                              </h6>
-                              <p class="text-xl font-bold ">
-                                {firstPart}
-                                <span class="text-primary-600">
-                                  {lastThree}
-                                </span>
-                              </p>
-                            </div>
-                            <button
-                              class="ml-4 shrink-0 py-1.5 px-4 text-xs font-medium text-white bg-primary-400 hover:bg-primary-500 rounded-full transition-all duration-200 copy-btn group"
-                              data-copy={donationAmount}
-                              aria-label="Copy payment amount"
-                            >
-                              Salin
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    }
-
-                    {/* Important Notice */}
-                    <div class="p-4 border-b border-gray-200">
-                      <div class="bg-amber-50 border-l-4 border-amber-400 rounded-r-lg p-4 shadow-sm">
-                        <div class="flex gap-3">
-                          <svg
-                            class="text-amber-500 shrink-0 mt-0.5 w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fill-rule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                              clip-rule="evenodd"
-                            />
-                          </svg>
-                          <div class="flex-1">
-                            <p class="text-[12px] text-amber-900 leading-relaxed">
-                              {isOvo ? (
-                                <span>
-                                  <span class="font-bold">PENTING!</span>{" "}
-                                  Silahkan masuk ke aplikasi{" "}
-                                  <span class="font-semibold">OVO</span> Anda
-                                  dan selesaikan pembayaran. Biasanya juga
-                                  sudah ada notifikasi pembayaran di HP OVO
-                                  Anda.
-                                </span>
-                              ) : (
-                                <span>
-                                  <span class="font-bold">PENTING!</span> Mohon
-                                  transfer tepat sampai 3 angka terakhir agar
-                                  pembayaran tiket terverifikasi otomatis
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Fragment>
-                )
-              }
-
-              {/* Action Buttons */}
-              <div class="p-4 space-y-2.5">
-               
-                  <a
-                  href="/event-saya"
-                  class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm transition-all duration-200 shadow-sm active:scale-[0.99]"
-                >
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                  </svg>
-                  <span>Lihat di Event Saya</span>
-                </a>
-
-                 <a
-                  id="btn-cara-pembayaran"
-                  href={`/invoice/help/${slug}`}
-                  class="group flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-50 text-neutral-700 font-medium text-sm border border-neutral-200 hover:border-neutral-300 transition-all duration-200 active:scale-[0.99]"
-                >
-                  <svg
-                    class="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 transition-colors duration-200"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                  <span>Cara Pembayaran</span>
-                </a>
-
-              </div>
-            </div>
-
-            {/* Help Section */}
-            <div class="bg-white rounded-md shadow-md p-4">
-              <h3 class="font-semibold text-gray-900 text-center mb-4">
-                Ada yang ingin ditanyakan?
-              </h3>
-              <div class="space-y-3">
-                <a
-                  href="https://api.whatsapp.com/send?phone=6281325521905&text=Assalamu%27alaikum"
-                  class="flex items-center justify-center w-full text-sm md:text-base bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-md transition-colors duration-200 shadow-md hover:shadow-lg"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                  </svg>
-                  Chat Admin
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InvoicePendingState
+          slug={slug}
+          donationAmount={donationAmount}
+          lastPaymentTime={lastPaymentTime}
+          payment={payment}
+          isQris={isQris}
+          isOvo={isOvo}
+          qrPayload={qrPayload}
+          displayAccountNumber={displayAccountNumber}
+          displayAccountName={displayAccountName}
+          firstPart={firstPart}
+          lastThree={lastThree}
+        />
       )
     }
   </section>
 
   <script>
     import { showToast } from "@/lib/toast";
-
     import { sendInitialCheckoutEvent } from "@/lib/pixels";
     import { trackBeginCheckout, trackPurchase } from "@/lib/tracking";
 
     let hasTracked = false;
 
+    // Countdown Timer
+    let timerInterval: number | null = null;
+
+    function initCountdown() {
+      const countdownWrapper = document.getElementById(
+        "payment-countdown-wrapper",
+      );
+      if (!countdownWrapper) return;
+
+      const deadlineStr = countdownWrapper.dataset.deadline;
+      if (!deadlineStr) return;
+
+      const targetTime = new Date(deadlineStr).getTime();
+      if (isNaN(targetTime)) return;
+
+      const hoursEl = document.getElementById("cd-hours");
+      const minutesEl = document.getElementById("cd-minutes");
+      const secondsEl = document.getElementById("cd-seconds");
+      const statusEl = document.getElementById("countdown-status");
+      const boxesEl = document.getElementById("countdown-boxes");
+
+      if (timerInterval) clearInterval(timerInterval);
+
+      const updateCountdown = () => {
+        const now = Date.now();
+        const diff = targetTime - now;
+
+        if (diff <= 0) {
+          if (timerInterval) clearInterval(timerInterval);
+          if (hoursEl) hoursEl.textContent = "00";
+          if (minutesEl) minutesEl.textContent = "00";
+          if (secondsEl) secondsEl.textContent = "00";
+          if (statusEl) statusEl.classList.remove("hidden");
+          if (boxesEl) boxesEl.classList.add("opacity-50");
+          return;
+        }
+
+        const totalSeconds = Math.floor(diff / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        if (hoursEl) hoursEl.textContent = String(hours).padStart(2, "0");
+        if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, "0");
+        if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, "0");
+      };
+
+      updateCountdown();
+      timerInterval = window.setInterval(updateCountdown, 1000);
+    }
+
     function initInvoicePage() {
+      initCountdown();
       const el = document.getElementById("invoice-page");
       if (!el) return;
 
       const slug = el.dataset.slug;
       const donationAmount = Number(el.dataset.amount || 0);
-      const isPaid = el.dataset.paid === "true";
       const paymentUrl = el.dataset.paymentUrl;
       const qrCode = el.dataset.qrCode;
       const paymentType = el.dataset.paymentType; // "qris" | "ovo" | "va" | "other"
 
-      // Tracking cukup dikirim sekali, jangan diulang tiap kali pageshow (mis. dari bfcache)
+      // Tracking cukup dikirim sekali
       if (!hasTracked) {
         hasTracked = true;
         sendInitialCheckoutEvent(slug, donationAmount);
@@ -763,7 +257,7 @@ const pageTitle = isPaid
           value: donationAmount,
         });
       }
-      
+
       if (paymentUrl && !qrCode && paymentType === "other") {
         // Cuma redirect untuk metode yang bukan Qris/OVO/VA
         setTimeout(() => {
@@ -774,9 +268,6 @@ const pageTitle = isPaid
 
     document.addEventListener("DOMContentLoaded", initInvoicePage);
 
-    // Saat user pencet Back dari halaman gateway, browser sering restore
-    // halaman ini dari bfcache — DOMContentLoaded TIDAK fire lagi di kasus itu,
-    // jadi redirect perlu dijalankan ulang lewat event pageshow.
     window.addEventListener("pageshow", (e) => {
       if (e.persisted) {
         initInvoicePage();

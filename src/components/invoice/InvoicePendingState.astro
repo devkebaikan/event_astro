@@ -1,0 +1,263 @@
+---
+import QrisPayment from "@/components/ui/QrisPayment.astro";
+import InvoiceHelpWa from "./InvoiceHelpWa.astro";
+import { formatDateTime } from "@/lib/formatter";
+
+interface Props {
+  slug: string;
+  donationAmount: number;
+  lastPaymentTime?: string;
+  payment: any;
+  isQris: boolean;
+  isOvo: boolean;
+  qrPayload?: string | null;
+  displayAccountNumber?: string | null;
+  displayAccountName?: string | null;
+  firstPart: string;
+  lastThree: string;
+}
+
+const {
+  slug,
+  donationAmount,
+  lastPaymentTime,
+  payment,
+  isQris,
+  isOvo,
+  qrPayload,
+  displayAccountNumber,
+  displayAccountName,
+  firstPart,
+  lastThree,
+} = Astro.props;
+---
+
+<div class="container bg-neutral-50 min-h-screen">
+  <div class="space-y-4">
+    <!-- Payment Deadline Section -->
+    <div class="bg-primary-500 rounded-b p-4 pt-20 text-white shadow-md">
+      <!-- <div class="flex items-center justify-between mb-2">
+        <h6 class="text-xs text-white/90 font-medium">
+          Batas waktu pembayaran
+        </h6>
+        <div class="flex items-center gap-1.5 text-xs text-white/80">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+              clip-rule="evenodd"></path>
+          </svg>
+          <span class="text-[11px]">{formatDateTime(lastPaymentTime)}</span>
+        </div>
+      </div> -->
+
+      <!-- Countdown Display -->
+      <div
+        id="payment-countdown-wrapper"
+        data-deadline={lastPaymentTime ?? ""}
+        class="backdrop-blur-xs rounded-xl p-3 flex flex-col space-y-3 items-center justify-between"
+      >
+        <div>
+          <span class="text-xs text-white block">Sisa Waktu Pembayaran</span>
+          <span
+            id="countdown-status"
+            class="text-xs font-medium text-amber-200 hidden"
+          >
+            Waktu pembayaran habis
+          </span>
+        </div>
+
+        <div
+          id="countdown-boxes"
+          class="flex items-center gap-1.5 font-mono font-bold"
+        >
+          <div
+            class="flex flex-col items-center bg-white/20 rounded-md px-2 py-1 min-w-[36px]"
+          >
+            <span id="cd-hours" class="leading-none">00</span>
+            <span class="text-[9px] font-sans font-normal opacity-80 mt-0.5"
+              >Jam</span
+            >
+          </div>
+          <span class="text-white/80 font-bold">:</span>
+          <div
+            class="flex flex-col items-center bg-white/20 rounded-md px-2 py-1 min-w-[36px]"
+          >
+            <span id="cd-minutes" class="leading-none">00</span>
+            <span class="text-[9px] font-sans font-normal opacity-80 mt-0.5"
+              >Menit</span
+            >
+          </div>
+          <span class="text-white/80 font-bold">:</span>
+          <div
+            class="flex flex-col items-center bg-white/20 rounded-md px-2 py-1 min-w-[36px]"
+          >
+            <span id="cd-seconds" class="leading-none">00</span>
+            <span class="text-[9px] font-sans font-normal opacity-80 mt-0.5"
+              >Detik</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Details Card -->
+    <div class="bg-white rounded-md shadow-sm overflow-hidden">
+      {/* qris payment */}
+      {
+        isQris ? (
+          <QrisPayment
+            qrPayload={qrPayload}
+            donationAmount={donationAmount}
+            accountBehalf={displayAccountName}
+            imgUrl={payment.image}
+          />
+        ) : (
+          <Fragment>
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
+              <p class="text-xs text-gray-600 mb-2">Transfer via</p>
+              <div class="h-12 flex items-center justify-start">
+                <img
+                  class="h-full max-w-full object-contain"
+                  alt={payment.bank || payment.name || "Payment method"}
+                  src={payment.image}
+                />
+              </div>
+            </div>
+
+            {/* Account Number Section (bank transfer / VA) */}
+            {displayAccountNumber && Number(displayAccountNumber) !== 0 && (
+              <div class="p-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                  <div class="flex-1">
+                    <h6 class="text-xs text-gray-500 mb-1">Nama Rekening</h6>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {displayAccountName}
+                    </p>
+                    <p class="text-lg font-mono font-bold text-gray-800 mt-1">
+                      {displayAccountNumber}
+                    </p>
+                  </div>
+                  <button
+                    class="ml-4 shrink-0 py-1.5 px-4 text-xs font-medium text-white bg-primary-400 hover:bg-primary-500 rounded-full transition-all duration-200 copy-btn group"
+                    data-copy={displayAccountNumber}
+                    aria-label="Copy account number"
+                  >
+                    Salin
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Donation Amount Section */}
+            {!isOvo && (
+              <div class="p-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                  <div class="flex-1">
+                    <h6 class="text-xs text-gray-500 mb-1">
+                      Jumlah Pembayaran
+                    </h6>
+                    <p class="text-xl font-bold ">
+                      {firstPart}
+                      <span class="text-primary-600">{lastThree}</span>
+                    </p>
+                  </div>
+                  <button
+                    class="ml-4 shrink-0 py-1.5 px-4 text-xs font-medium text-white bg-primary-400 hover:bg-primary-500 rounded-full transition-all duration-200 copy-btn group"
+                    data-copy={donationAmount}
+                    aria-label="Copy payment amount"
+                  >
+                    Salin
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Important Notice */}
+            <div class="p-4 border-b border-gray-200">
+              <div class="bg-amber-50 border-l-4 border-amber-400 rounded-r-lg p-4 shadow-sm">
+                <div class="flex gap-3">
+                  <svg
+                    class="text-amber-500 shrink-0 mt-0.5 w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                  <div class="flex-1">
+                    <p class="text-[12px] text-amber-900 leading-relaxed">
+                      {isOvo ? (
+                        <span>
+                          <span class="font-bold">PENTING!</span> Silahkan masuk
+                          ke aplikasi <span class="font-semibold">OVO</span>{" "}
+                          Anda dan selesaikan pembayaran. Biasanya juga sudah
+                          ada notifikasi pembayaran di HP OVO Anda.
+                        </span>
+                      ) : (
+                        <span>
+                          <span class="font-bold">PENTING!</span> Mohon transfer
+                          tepat sampai 3 angka terakhir agar pembayaran tiket
+                          terverifikasi otomatis
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Fragment>
+        )
+      }
+
+      {/* Action Buttons */}
+      <div class="p-4 space-y-2.5">
+        <a
+          href="/event-saya"
+          class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm transition-all duration-200 shadow-sm active:scale-[0.99]"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+            ></path>
+          </svg>
+          <span>Lihat di Event Saya</span>
+        </a>
+
+        <a
+          id="btn-cara-pembayaran"
+          href={`/invoice/help/${slug}`}
+          class="group flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-50 text-neutral-700 font-medium text-sm border border-neutral-200 hover:border-neutral-300 transition-all duration-200 active:scale-[0.99]"
+        >
+          <svg
+            class="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 transition-colors duration-200"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+            ></path>
+          </svg>
+          <span>Cara Pembayaran</span>
+        </a>
+      </div>
+    </div>
+
+    <InvoiceHelpWa text="Ada yang ingin ditanyakan?" />
+  </div>
+</div>

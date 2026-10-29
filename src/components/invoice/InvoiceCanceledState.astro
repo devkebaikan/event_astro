@@ -1,0 +1,131 @@
+---
+import InvoiceHelpWa from "./InvoiceHelpWa.astro";
+
+interface Props {
+  slug: string;
+  eventName?: string;
+  eventImage?: string;
+  eventSlug?: string;
+  paymentName?: string;
+  formattedAmount: string;
+}
+
+const {
+  slug,
+  eventName,
+  eventImage,
+  eventSlug,
+  paymentName,
+  formattedAmount,
+} = Astro.props;
+---
+
+<div class="container bg-neutral-50 min-h-screen pb-16">
+  <div class="max-w-[480px] mx-auto space-y-4">
+    {/* Header Dibatalkan */}
+    <div class="bg-white rounded-b-lg p-6 pt-12 text-center shadow-xs border border-gray-100 flex flex-col items-center">
+      <div class="relative w-20 h-20 flex items-center justify-center mb-3">
+        <div class="absolute inset-0 bg-rose-100/70 rounded-full"></div>
+        <div class="relative w-12 h-12 flex items-center justify-center text-rose-500">
+          <svg class="w-full h-full drop-shadow-xs" viewBox="0 0 48 48" fill="currentColor">
+            <path d="M21.2 4.4a3.8 3.8 0 0 1 5.6 0l2 2.1c1 1.1 2.5 1.7 4 1.5l2.9-.3a3.8 3.8 0 0 1 4.2 3.8l.2 2.9c.1 1.5.9 2.9 2.2 3.6l2.5 1.5a3.8 3.8 0 0 1 1.7 5.3l-1.5 2.5a4.7 4.7 0 0 0-.6 4.2l1 2.7a3.8 3.8 0 0 1-2.4 5l-2.8.9a4.7 4.7 0 0 0-3.1 3l-.9 2.8a3.8 3.8 0 0 1-4.9 2.5l-2.7-1a4.7 4.7 0 0 0-4.2.6l-2.5 1.5a3.8 3.8 0 0 1-5.3-1.7l-1.5-2.5a4.7 4.7 0 0 0-3.6-2.2l-2.9-.2a3.8 3.8 0 0 1-3.8-4.2l.3-2.9c.2-1.5-.4-3-1.5-4l-2.1-2a3.8 3.8 0 0 1 0-5.6l2.1-2c1.1-1 1.7-2.5 1.5-4l-.3-2.9a3.8 3.8 0 0 1 3.8-4.2l2.9.2c1.5.1 2.9-.9 3.6-2.2l1.5-2.5a3.8 3.8 0 0 1 5.3-1.7l2.5 1.5c1.3.8 3 .8 4.2-.6l2-2.1Z" />
+          </svg>
+          <svg class="w-5 h-5 text-white absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+
+      <h1 class="text-lg font-bold text-gray-900 mb-1">
+        Transaksi Dibatalkan
+      </h1>
+      <p class="text-xs text-gray-500 max-w-[280px] leading-relaxed">
+        Waktu pembayaran telah berakhir atau transaksi ini telah dibatalkan.
+      </p>
+    </div>
+
+    {/* Kartu Rincian Transaksi */}
+    <div class="bg-white rounded-lg shadow-xs border border-gray-100 overflow-hidden divide-y divide-gray-100 text-xs">
+      <div class="p-4 flex items-center justify-between">
+        <div>
+          <span class="text-[11px] text-gray-400 block font-medium">Nomor Invoice</span>
+          <span class="font-mono font-bold text-gray-800">{slug}</span>
+        </div>
+        <div class="text-right">
+          <span class="inline-flex items-center gap-1 font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100 text-[11px]">
+            Dibatalkan
+          </span>
+        </div>
+      </div>
+
+      {/* Event Info */}
+      {eventName && (
+        <div class="p-4 flex items-center gap-3">
+          {eventImage ? (
+            <img
+              src={eventImage}
+              alt={eventName}
+              class="w-12 h-12 rounded-xl object-cover border border-gray-100 shrink-0 opacity-80"
+            />
+          ) : (
+            <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 text-gray-400 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          )}
+          <div class="min-w-0 flex-1">
+            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Acara</span>
+            <h2 class="text-xs font-bold text-gray-800 truncate">{eventName}</h2>
+            {eventSlug && (
+              <a href={`/event/${eventSlug}`} class="text-[11px] text-primary-600 hover:underline inline-block mt-0.5">
+                Daftar ulang acara ini &rarr;
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Detail Pembayaran */}
+      <div class="p-4 space-y-2">
+        <div class="flex justify-between items-center text-gray-500">
+          <span>Metode Pembayaran</span>
+          <span class="font-medium text-gray-800">{paymentName || "-"}</span>
+        </div>
+        <div class="flex justify-between items-center pt-2 font-bold text-sm">
+          <span class="text-gray-700">Total Nominal</span>
+          <span class="text-gray-900">{formattedAmount}</span>
+        </div>
+      </div>
+
+      {/* Action Buttons Dibatalkan */}
+      <div class="p-4 space-y-2 bg-gray-50/50">
+        {eventSlug ? (
+          <a
+            href={`/event/${eventSlug}`}
+            class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-xs transition-colors shadow-xs active:scale-[0.99]"
+          >
+            <span>Daftar Ulang Event</span>
+          </a>
+        ) : (
+          <a
+            href="/"
+            class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-xs transition-colors shadow-xs active:scale-[0.99]"
+          >
+            <span>Cari Event Lainnya</span>
+          </a>
+        )}
+
+        <a
+          href="/event-saya"
+          class="flex items-center justify-center w-full py-2.5 px-4 rounded-xl bg-white hover:bg-gray-50 text-gray-600 font-medium text-xs border border-gray-200 transition-colors"
+        >
+          Kembali ke Event Saya
+        </a>
+      </div>
+    </div>
+
+    <InvoiceHelpWa text="Ada pertanyaan?" />
+  </div>
+</div>
+

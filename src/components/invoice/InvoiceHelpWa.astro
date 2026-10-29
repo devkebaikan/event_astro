@@ -1,0 +1,26 @@
+---
+interface Props {
+  text?: string;
+  phone?: string;
+}
+
+const {
+  text = "Butuh bantuan?",
+  phone = "6281325521905",
+} = Astro.props;
+
+const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=Assalamu%27alaikum`;
+---
+
+<div class="text-center pt-2">
+  <a
+    href={waUrl}
+    class="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <span>{text}</span>
+    <span class="text-primary-600 font-semibold underline">Chat Admin</span>
+  </a>
+</div>
+

@@ -87,7 +87,7 @@ const currentPath = Astro.url.pathname + Astro.url.search;
       <div>
         <!-- Filter Tabs (Semua / Mendatang / Selesai) -->
         <div class="sticky top-[73px] z-10 bg-neutral-50 pb-3 pt-1">
-          <div class="flex items-center gap-1.5 bg-gray-100 p-1.5 rounded-2xl border border-gray-100 shadow-sm">
+          {/* <div class="flex items-center gap-1.5 bg-gray-100 p-1.5 rounded-2xl border border-gray-100 shadow-sm">
             <button
               type="button"
               data-filter="semua"
@@ -109,35 +109,35 @@ const currentPath = Astro.url.pathname + Astro.url.search;
             >
               Selesai
             </button>
-          </div>
+          </div> */}
 
           <!-- Status Sub-filters (Horizontal Chips) -->
           <div class="flex items-center gap-2 mt-2.5 overflow-x-auto pb-1 no-scrollbar">
             <button
               type="button"
               data-status=""
-              class="status-chip whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all bg-primary-50 text-primary-700 border-primary-200"
+              class="status-chip whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all bg-primary-500 text-white border-primary-500 shadow-sm cursor-pointer"
             >
               Semua Status
             </button>
             <button
               type="button"
               data-status="Paid"
-              class="status-chip whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+              class="status-chip whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all bg-white text-gray-600 border-gray-200 hover:bg-gray-50 cursor-pointer"
             >
               Sudah Bayar
             </button>
             <button
               type="button"
               data-status="Pending"
-              class="status-chip whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+              class="status-chip whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all bg-white text-gray-600 border-gray-200 hover:bg-gray-50 cursor-pointer"
             >
               Menunggu Bayar
             </button>
             <button
               type="button"
               data-status="Canceled"
-              class="status-chip whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+              class="status-chip whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all bg-white text-gray-600 border-gray-200 hover:bg-gray-50 cursor-pointer"
             >
               Dibatalkan
             </button>
@@ -195,7 +195,7 @@ const currentPath = Astro.url.pathname + Astro.url.search;
         </div>
 
         <!-- Events List Container -->
-        <div id="events-list" class="space-y-3 mt-3">
+        <div id="events-list" class="space-y-3 mt-16">
           {initialTransactions.map((item) => {
             const ev = item.event || {};
             const payment = item.payment || {};
@@ -209,7 +209,7 @@ const currentPath = Astro.url.pathname + Astro.url.search;
             const eventDate = ev.datetime ? formatDateTime(ev.datetime) : (item.date ? formatDate(item.date) : "-");
 
             return (
-              <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:border-primary-200 transition-all space-y-3">
+              <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow-sm transition-all space-y-3">
                 <!-- Top Header: Invoice & Status Badge -->
                 <div class="flex items-center justify-between text-xs pb-2 border-b border-gray-50">
                   <div class="flex items-center gap-1.5 text-gray-400 font-mono text-[11px]">
@@ -220,18 +220,18 @@ const currentPath = Astro.url.pathname + Astro.url.search;
                   </div>
 
                   {isPaid ? (
-                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                      {/* <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> */}
                       {payment.status_label || "Sudah Bayar"}
                     </span>
                   ) : isCanceled ? (
-                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-0.5 rounded-full">
-                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-full">
+                      {/* <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> */}
                       {payment.status_label || "Dibatalkan"}
                     </span>
                   ) : (
-                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full">
-                      <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                      {/* <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> */}
                       {payment.status_label || "Menunggu Pembayaran"}
                     </span>
                   )}
@@ -304,14 +304,14 @@ const currentPath = Astro.url.pathname + Astro.url.search;
                       </a>
                     )}
 
-                    {eventSlug && (
+                    {/* {eventSlug && (
                       <a
                         href={`/event/${eventSlug}`}
                         class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 transition-all active:scale-95"
                       >
                         Detail
                       </a>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </div>
@@ -586,9 +586,9 @@ const currentPath = Astro.url.pathname + Astro.url.search;
         currentPage = 1;
 
         statusChips.forEach((c) => {
-          c.className = "status-chip whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all bg-white text-gray-600 border-gray-200 hover:bg-gray-50";
+          c.className = "status-chip cursor-pointer whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all bg-white text-gray-600 border-gray-200 hover:bg-gray-50";
         });
-        chip.className = "status-chip whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all bg-primary-50 text-primary-700 border-primary-200";
+        chip.className = "status-chip cursor-pointer whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all bg-primary-500 text-white border-primary-500 shadow-sm";
 
         fetchMyEvents(1, false);
       });
